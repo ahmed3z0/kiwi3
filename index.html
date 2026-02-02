@@ -2,92 +2,62 @@
 <html>
 <head>
   <style>
-    /* 1. Global Styles & Background */
+    /* 1. Global Styles */
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      background-color: #121212; 
-      color: #ffffff; 
-      margin: 0; 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background-color: #121212; color: #ffffff; margin: 0; 
+      display: flex; flex-direction: column; align-items: center;
     }
 
-    /* 2. Dark Blue Header */
+    /* 2. Header & Profile Area */
     header {
-      width: 100%;
-      background-color: #0d1b2a; 
-      padding: 15px 0;
-      display: flex;
-      justify-content: flex-end; 
-      align-items: center;
+      width: 100%; background-color: #0d1b2a; padding: 12px 0;
+      display: flex; justify-content: flex-end; align-items: center;
       box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
 
-    .auth-buttons { margin-right: 30px; }
+    .auth-buttons { margin-right: 30px; display: flex; align-items: center; }
 
-    /* New Profile Styling */
     .profile-area { display: flex; align-items: center; gap: 12px; margin-right: 15px; }
+    
     .profile-pic {
-      width: 40px; height: 40px; border-radius: 50%;
+      width: 38px; height: 38px; border-radius: 50%;
       background-color: #1b263b; border: 2px solid #415a77;
-      object-fit: cover; cursor: pointer;
+      object-fit: cover;
     }
-    .user-info { display: flex; flex-direction: column; text-align: right; }
-    #photoPrompt { font-size: 10px; color: #4cc9f0; cursor: pointer; text-decoration: underline; }
 
     /* 3. Button Styling */
     button { 
-      padding: 10px 20px; 
-      margin-left: 10px; 
-      cursor: pointer; 
-      border-radius: 6px; 
-      border: 1px solid #3e4c5e;
-      background-color: #1b263b;
-      color: white;
-      font-weight: 600;
-      transition: all 0.3s ease; 
+      padding: 8px 16px; margin-left: 8px; cursor: pointer; border-radius: 6px; 
+      border: 1px solid #3e4c5e; background-color: #1b263b; color: white;
+      font-weight: 600; transition: all 0.3s ease; 
     }
-
-    button:hover { background-color: #415a77; border-color: #778da9; }
+    button:hover { background-color: #415a77; }
+    
+    .settings-btn { background-color: #415a77; border: none; }
     .logout-btn { background-color: #780000; border: none; }
     .logout-btn:hover { background-color: #bd1f36; }
 
-    .submit-btn { 
-      background: #28a745; 
-      color: white; 
-      border: none; 
-      padding: 12px; 
-      margin-top: 15px;
-    }
-    .submit-btn:hover { background: #218838; }
-
-    /* 4. Content Area */
-    .content { padding-top: 60px; text-align: center; }
-    #kiwiImage, #verifyWarning { display: none; margin-top: 30px; border-radius: 12px; }
-    
+    /* 4. Modals & UI */
     .modal-overlay {
-      display: none; position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85); 
-      justify-content: center; align-items: center; z-index: 100;
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100;
     }
 
     .modal-content {
-      background: #1e1e1e; 
-      color: white;
-      padding: 30px; border-radius: 12px; width: 320px;
-      display: flex; flex-direction: column;
-      border: 1px solid #333;
+      background: #1e1e1e; color: white; padding: 25px; border-radius: 12px; 
+      width: 300px; display: flex; flex-direction: column; border: 1px solid #333;
     }
 
     input { 
-      margin: 10px 0; padding: 12px; 
-      border: 1px solid #333; border-radius: 6px; 
+      margin: 10px 0; padding: 12px; border: 1px solid #333; border-radius: 6px; 
       background: #2a2a2a; color: white;
     }
 
-    .reset-link { font-size: 12px; color: #4cc9f0; cursor: pointer; text-align: center; margin-top: 15px; }
+    .submit-btn { background: #28a745; color: white; border: none; padding: 12px; margin-top: 10px; }
+    
+    .content { padding-top: 60px; text-align: center; }
+    #kiwiImage, #verifyWarning { display: none; margin-top: 30px; border-radius: 12px; }
     .warning-box { background: #332b00; color: #ffe066; padding: 20px; border-radius: 8px; border: 1px solid #665500; }
   </style>
 </head>
@@ -96,17 +66,16 @@
   <header>
     <div class="auth-buttons">
       <div id="loggedOutUI">
-        <button onclick="openModal('login')">Login</button>
-        <button onclick="openModal('signup')">Sign Up</button>
+        <button onclick="openAuthModal('login')">Login</button>
+        <button onclick="openAuthModal('signup')">Sign Up</button>
       </div>
+
       <div id="loggedInUI" style="display:none; align-items: center;">
         <div class="profile-area">
-          <div class="user-info">
-            <span id="userGreeting" style="font-weight: bold;"></span>
-            <span id="photoPrompt" onclick="updatePhotoLink()">Update Photo URL</span>
-          </div>
-          <img id="headerProfilePic" class="profile-pic" src="https://www.w3schools.com/howto/img_avatar.png" onclick="updatePhotoLink()">
+          <span id="userGreeting" style="font-weight: bold;"></span>
+          <img id="headerProfilePic" class="profile-pic" src="https://www.w3schools.com/howto/img_avatar.png">
         </div>
+        <button class="settings-btn" onclick="openSettingsModal()">Settings</button>
         <button class="logout-btn" onclick="handleLogout()">Logout</button>
       </div>
     </div>
@@ -115,39 +84,46 @@
   <div class="content">
     <div id="loggedOutMessage">
       <h1>The Secret Kiwi Vault</h1>
-      <p>Login to unlock the treasure.</p>
+      <p>Please login to continue.</p>
     </div>
-
-    <img id="kiwiImage" src="kiwi.jpg" alt="brah" width="300" />
-    
+    <img id="kiwiImage" src="kiwi.jpg" alt="kiwi" width="300" />
     <div id="verifyWarning" class="warning-box">
       <h3>Verification Required</h3>
-      <p>Please check your inbox and verify your email to unlock the Kiwi.</p>
-      <button onclick="location.reload()">I've verified!</button>
+      <p>Check your email and verify your account to see the Kiwi.</p>
+      <button onclick="location.reload()">Refresh Page</button>
     </div>
   </div>
 
   <div id="authModal" class="modal-overlay">
     <div class="modal-content">
-      <h2 id="modalTitle" style="margin-top:0">Create Account</h2>
-      <input type="text" id="nameInput" placeholder="Full Name">
-      <input type="email" id="emailInput" placeholder="Email">
-      <input type="password" id="pwInput" placeholder="Password">
-      <label style="font-size: 12px; margin: 5px 0 15px 0;">
-        <input type="checkbox" onclick="togglePassword()"> Show Password
-      </label>
-      <button id="mainAuthBtn" class="submit-btn" onclick="handleAuthAction()">Join Now</button>
-      <span class="reset-link" onclick="handlePasswordReset()">Forgot Password?</span>
-      <button onclick="closeModal()" style="background:none; border:none; color:#888; margin-top:15px; cursor:pointer;">Cancel</button>
+      <h2 id="authTitle" style="margin-top:0">Account</h2>
+      <input type="text" id="regName" placeholder="Full Name">
+      <input type="email" id="authEmail" placeholder="Email">
+      <input type="password" id="authPw" placeholder="Password">
+      <button id="authSubmitBtn" class="submit-btn" onclick="handleAuth()">Submit</button>
+      <button onclick="closeModal('authModal')" style="background:none; border:none; color:#888; margin-top:10px;">Cancel</button>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 style="margin-top:0">User Settings</h2>
+      <label style="font-size:12px; color:#888;">Update Display Name</label>
+      <input type="text" id="setDisplayName" placeholder="New Name">
+      
+      <label style="font-size:12px; color:#888;">Update Photo URL</label>
+      <input type="text" id="setPhotoUrl" placeholder="Image link (https://...)">
+      
+      <button class="submit-btn" onclick="handleUpdateSettings()">Save Changes</button>
+      <button onclick="closeModal('settingsModal')" style="background:none; border:none; color:#888; margin-top:10px;">Close</button>
     </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
-      sendEmailVerification, sendPasswordResetEmail, signOut, onAuthStateChanged,
-      updateProfile 
+      getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, sendEmailVerification, signOut 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -162,100 +138,91 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    // --- Observer ---
     onAuthStateChanged(auth, (user) => {
       const loggedOutDiv = document.getElementById('loggedOutUI');
       const loggedInDiv = document.getElementById('loggedInUI');
-      const greeting = document.getElementById('userGreeting');
-      const profilePic = document.getElementById('headerProfilePic');
-      const kiwi = document.getElementById('kiwiImage');
-      const warning = document.getElementById('verifyWarning');
-      const welcome = document.getElementById('loggedOutMessage');
-
+      
       if (user) {
         loggedOutDiv.style.display = 'none';
         loggedInDiv.style.display = 'flex';
-        welcome.style.display = 'none';
+        document.getElementById('loggedOutMessage').style.display = 'none';
         
-        // Show Display Name or email fallback
-        greeting.innerText = "Hi, " + (user.displayName || user.email.split('@')[0]);
-        // Set profile pic or default avatar
-        profilePic.src = user.photoURL || "https://www.w3schools.com/howto/img_avatar.png";
+        // Update Header
+        document.getElementById('userGreeting').innerText = user.displayName || user.email.split('@')[0];
+        document.getElementById('headerProfilePic').src = user.photoURL || "https://www.w3schools.com/howto/img_avatar.png";
+        
+        // Pre-fill Settings fields
+        document.getElementById('setDisplayName').value = user.displayName || "";
+        document.getElementById('setPhotoUrl').value = user.photoURL || "";
 
+        // Verification Logic
         if (user.emailVerified) {
-          kiwi.style.display = 'inline-block';
-          warning.style.display = 'none';
+          document.getElementById('kiwiImage').style.display = 'inline-block';
+          document.getElementById('verifyWarning').style.display = 'none';
         } else {
-          kiwi.style.display = 'none';
-          warning.style.display = 'block';
+          document.getElementById('kiwiImage').style.display = 'none';
+          document.getElementById('verifyWarning').style.display = 'block';
         }
       } else {
         loggedOutDiv.style.display = 'block';
         loggedInDiv.style.display = 'none';
-        welcome.style.display = 'block';
-        kiwi.style.display = 'none';
-        warning.style.display = 'none';
+        document.getElementById('loggedOutMessage').style.display = 'block';
+        document.getElementById('kiwiImage').style.display = 'none';
+        document.getElementById('verifyWarning').style.display = 'none';
       }
     });
 
-    let currentMode = 'signup';
-    window.openModal = (mode) => { 
-      currentMode = mode;
-      document.getElementById('modalTitle').innerText = mode === 'login' ? 'Login' : 'Create Account';
-      document.getElementById('mainAuthBtn').innerText = mode === 'login' ? 'Login' : 'Join Now';
-      
-      // Hide name field if logging in
-      document.getElementById('nameInput').style.display = mode === 'login' ? 'none' : 'block';
-      document.getElementById('authModal').style.display = 'flex'; 
+    // --- Modal Management ---
+    let authMode = 'signup';
+    window.openAuthModal = (mode) => {
+      authMode = mode;
+      document.getElementById('authTitle').innerText = mode === 'login' ? 'Login' : 'Create Account';
+      document.getElementById('regName').style.display = mode === 'login' ? 'none' : 'block';
+      document.getElementById('authModal').style.display = 'flex';
     };
 
-    window.closeModal = () => { document.getElementById('authModal').style.display = 'none'; };
-    
-    window.togglePassword = () => {
-      const x = document.getElementById("pwInput");
-      x.type = (x.type === "password") ? "text" : "password";
+    window.openSettingsModal = () => {
+      document.getElementById('settingsModal').style.display = 'flex';
     };
 
-    window.handleAuthAction = async () => {
-      const name = document.getElementById('nameInput').value;
-      const email = document.getElementById('emailInput').value;
-      const password = document.getElementById('pwInput').value;
-      
-      if(!email || !password) return alert("Please fill in email and password");
+    window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
+
+    // --- Auth Logic ---
+    window.handleAuth = async () => {
+      const email = document.getElementById('authEmail').value;
+      const pass = document.getElementById('authPw').value;
+      const name = document.getElementById('regName').value;
 
       try {
-        if (currentMode === 'signup') {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          // Set user's name immediately
-          await updateProfile(userCredential.user, { displayName: name });
-          await sendEmailVerification(userCredential.user);
-          alert("Success! Check your email.");
+        if (authMode === 'signup') {
+          const res = await createUserWithEmailAndPassword(auth, email, pass);
+          await updateProfile(res.user, { displayName: name });
+          await sendEmailVerification(res.user);
+          alert("Verify your email to see the Kiwi!");
         } else {
-          await signInWithEmailAndPassword(auth, email, password);
+          await signInWithEmailAndPassword(auth, email, pass);
         }
-        window.closeModal();
-      } catch (error) { alert(error.message); }
+        closeModal('authModal');
+      } catch (e) { alert(e.message); }
     };
 
-    window.updatePhotoLink = async () => {
-      const newUrl = prompt("Paste an image URL here for your profile picture:");
-      if (!newUrl) return;
+    // --- Update Profile Logic ---
+    window.handleUpdateSettings = async () => {
+      const newName = document.getElementById('setDisplayName').value;
+      const newPhoto = document.getElementById('setPhotoUrl').value;
+
       try {
-        await updateProfile(auth.currentUser, { photoURL: newUrl });
-        alert("Photo updated!");
-        location.reload();
-      } catch (error) { alert(error.message); }
+        await updateProfile(auth.currentUser, {
+          displayName: newName,
+          photoURL: newPhoto
+        });
+        alert("Profile Updated!");
+        closeModal('settingsModal');
+      } catch (e) { alert(e.message); }
     };
 
-    window.handleLogout = async () => { await signOut(auth); };
-
-    window.handlePasswordReset = async () => {
-      const email = document.getElementById('emailInput').value;
-      if(!email) return alert("Enter email first.");
-      try {
-        await sendPasswordResetEmail(auth, email);
-        alert("Reset email sent!");
-      } catch (error) { alert(error.message); }
-    };
+    window.handleLogout = () => signOut(auth);
   </script>
 </body>
 </html>
