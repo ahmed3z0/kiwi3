@@ -3,19 +3,17 @@
 <head>
   <style>
     body { font-family: sans-serif; }
-    
     .auth-buttons { position: absolute; top: 20px; right: 20px; }
-    
     button { padding: 8px 16px; margin-left: 10px; cursor: pointer; border-radius: 4px; }
 
-    /* The Modal (hidden by default) */
     .modal-overlay {
-      display: none; /* Secretly hidden */
+      display: none; 
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.5);
       justify-content: center;
       align-items: center;
+      z-index: 100;
     }
 
     .modal-content {
@@ -28,8 +26,7 @@
     }
 
     input { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-    
-    .submit-btn { background: #28a745; color: white; border: none; padding: 12px; }
+    .submit-btn { background: #28a745; color: white; border: none; padding: 12px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -43,46 +40,68 @@
   <div id="signUpModal" class="modal-overlay">
     <div class="modal-content">
       <h2>Create Account</h2>
-      <input type="email" placeholder="Enter Email" required>
-    <input type="password" id="pwInput" placeholder="Create Password" required>
-<label style="font-size: 12px;">
-  <input type="checkbox" onclick="togglePassword()"> Show Password
-</label>
-      <button class="submit-btn" onclick="closeModal()">Join Now</button>
+      <input type="email" id="emailInput" placeholder="Enter Email" required>
+      <input type="password" id="pwInput" placeholder="Create Password" required>
+      
+      <label style="font-size: 12px; margin-bottom: 10px;">
+        <input type="checkbox" onclick="togglePassword()"> Show Password
+      </label>
+
+      <button class="submit-btn" onclick="handleSignUp()">Join Now</button>
       <button onclick="closeModal()" style="background:none; border:none; color:grey; margin-top:10px;">Cancel</button>
     </div>
   </div>
 
-  <script>
-    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  <script type="module">
+    // 1. Import Auth specifically
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
-    authDomain: "ahmed3z0.firebaseapp.com",
-    projectId: "ahmed3z0",
-    storageBucket: "ahmed3z0.firebasestorage.app",
-    messagingSenderId: "512511154228",
-    appId: "1:512511154228:web:8f97e9c75b3800f6d65261",
-    measurementId: "G-ZK68GMDJ9P"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
+      authDomain: "ahmed3z0.firebaseapp.com",
+      projectId: "ahmed3z0",
+      storageBucket: "ahmed3z0.firebasestorage.app",
+      messagingSenderId: "512511154228",
+      appId: "1:512511154228:web:8f97e9c75b3800f6d65261"
+    };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-    
-    function openModal() { document.getElementById('signUpModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('signUpModal').style.display = 'none'; }
-    function togglePassword() {
-  const x = document.getElementById("pwInput");
-  x.type = (x.type === "password") ? "text" : "password";
-}
+    // 2. Initialize
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 3. Attach functions to 'window' so the HTML buttons can see them
+    window.openModal = () => { 
+      document.getElementById('signUpModal').style.display = 'flex'; 
+    };
+
+    window.closeModal = () => { 
+      document.getElementById('signUpModal').style.display = 'none'; 
+    };
+
+    window.togglePassword = () => {
+      const x = document.getElementById("pwInput");
+      x.type = (x.type === "password") ? "text" : "password";
+    };
+
+    // 4. The actual Sign Up logic
+    window.handleSignUp = async () => {
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('pwInput').value;
+
+      if(!email || !password) {
+        alert("Please fill in all fields");
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        alert("Account Created! Welcome " + userCredential.user.email);
+        window.closeModal();
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    };
   </script>
 
 </body>
