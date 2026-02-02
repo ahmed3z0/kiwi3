@@ -1,130 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="dark">
 <head>
   <style>
-    /* 1. Global Styles */
+    /* 1. Theme Variables */
+    :root[data-theme="dark"] {
+      --bg-color: #121212;
+      --text-color: #ffffff;
+      --header-bg: #0d1b2a;
+      --card-bg: #1e1e1e;
+      --input-bg: #2a2a2a;
+      --btn-bg: #1b263b;
+      --border-color: #333;
+    }
+    :root[data-theme="light"] {
+      --bg-color: #f0f2f5;
+      --text-color: #1c1e21;
+      --header-bg: #ffffff;
+      --card-bg: #ffffff;
+      --input-bg: #f5f6f7;
+      --btn-bg: #e4e6eb;
+      --border-color: #ddd;
+    }
+
     body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      background-color: #121212; color: #ffffff; margin: 0; 
-      display: flex; flex-direction: column; align-items: center;
+      font-family: 'Segoe UI', sans-serif; 
+      background-color: var(--bg-color); color: var(--text-color); 
+      margin: 0; transition: 0.3s; display: flex; flex-direction: column; align-items: center;
     }
 
-    /* 2. Header & Profile Area */
     header {
-      width: 100%; background-color: #0d1b2a; padding: 12px 0;
+      width: 100%; background-color: var(--header-bg); padding: 12px 0;
       display: flex; justify-content: flex-end; align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
-    .auth-buttons { margin-right: 30px; display: flex; align-items: center; }
+    .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; }
+    .profile-area { display: flex; align-items: center; gap: 12px; }
+    .profile-pic { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #415a77; }
 
-    .profile-area { display: flex; align-items: center; gap: 12px; margin-right: 15px; }
-    
-    .profile-pic {
-      width: 38px; height: 38px; border-radius: 50%;
-      background-color: #1b263b; border: 2px solid #415a77;
-      object-fit: cover;
-    }
-
-    /* 3. Button Styling */
     button { 
-      padding: 8px 16px; margin-left: 8px; cursor: pointer; border-radius: 6px; 
-      border: 1px solid #3e4c5e; background-color: #1b263b; color: white;
-      font-weight: 600; transition: all 0.3s ease; 
+      padding: 8px 16px; cursor: pointer; border-radius: 6px; 
+      border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color);
+      font-weight: 600; transition: 0.3s; 
     }
-    button:hover { background-color: #415a77; }
-    
-    .settings-btn { background-color: #415a77; border: none; }
-    .logout-btn { background-color: #780000; border: none; }
-    .logout-btn:hover { background-color: #bd1f36; }
 
-    /* 4. Modals & UI */
+    /* 4. Modals */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100;
+      background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100;
     }
-
     .modal-content {
-      background: #1e1e1e; color: white; padding: 25px; border-radius: 12px; 
-      width: 300px; display: flex; flex-direction: column; border: 1px solid #333;
+      background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; 
+      width: 300px; display: flex; flex-direction: column; border: 1px solid var(--border-color);
     }
-
-    input { 
-      margin: 10px 0; padding: 12px; border: 1px solid #333; border-radius: 6px; 
-      background: #2a2a2a; color: white;
-    }
-
-    .submit-btn { background: #28a745; color: white; border: none; padding: 12px; margin-top: 10px; }
+    input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
     
     .content { padding-top: 60px; text-align: center; }
-    #kiwiImage, #verifyWarning { display: none; margin-top: 30px; border-radius: 12px; }
-    .warning-box { background: #332b00; color: #ffe066; padding: 20px; border-radius: 8px; border: 1px solid #665500; }
+    #kiwiImage { display: none; margin-top: 30px; border-radius: 12px; border: 5px solid var(--header-bg); }
   </style>
 </head>
 <body>
 
   <header>
     <div class="auth-buttons">
+      <button onclick="toggleTheme()" id="themeBtn">Light Mode</button>
+
       <div id="loggedOutUI">
         <button onclick="openAuthModal('login')">Login</button>
         <button onclick="openAuthModal('signup')">Sign Up</button>
       </div>
 
-      <div id="loggedInUI" style="display:none; align-items: center;">
+      <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
         <div class="profile-area">
-          <span id="userGreeting" style="font-weight: bold;"></span>
-          <img id="headerProfilePic" class="profile-pic" src="https://www.w3schools.com/howto/img_avatar.png">
+          <span id="userGreeting"></span>
+          <img id="headerProfilePic" class="profile-pic" src="https://via.placeholder.com/40">
         </div>
-        <button class="settings-btn" onclick="openSettingsModal()">Settings</button>
-        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        <button onclick="openSettingsModal()">Settings</button>
+        <button onclick="handleLogout()" style="background:#780000; color:white; border:none;">Logout</button>
       </div>
     </div>
   </header>
 
   <div class="content">
-    <div id="loggedOutMessage">
-      <h1>The Secret Kiwi Vault</h1>
-      <p>Please login to continue.</p>
-    </div>
+    <h1 id="welcomeText">The Secret Kiwi Vault</h1>
     <img id="kiwiImage" src="kiwi.jpg" alt="kiwi" width="300" />
-    <div id="verifyWarning" class="warning-box">
-      <h3>Verification Required</h3>
-      <p>Check your email and verify your account to see the Kiwi.</p>
-      <button onclick="location.reload()">Refresh Page</button>
-    </div>
   </div>
 
   <div id="authModal" class="modal-overlay">
     <div class="modal-content">
-      <h2 id="authTitle" style="margin-top:0">Account</h2>
-      <input type="text" id="regName" placeholder="Full Name">
+      <h2 id="authTitle">Account</h2>
+      <input type="text" id="regName" placeholder="Unique Username">
       <input type="email" id="authEmail" placeholder="Email">
       <input type="password" id="authPw" placeholder="Password">
-      <button id="authSubmitBtn" class="submit-btn" onclick="handleAuth()">Submit</button>
-      <button onclick="closeModal('authModal')" style="background:none; border:none; color:#888; margin-top:10px;">Cancel</button>
+      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Submit</button>
+      <button onclick="closeModal('authModal')" style="background:none; border:none; color:#888;">Cancel</button>
     </div>
   </div>
 
   <div id="settingsModal" class="modal-overlay">
     <div class="modal-content">
-      <h2 style="margin-top:0">User Settings</h2>
-      <label style="font-size:12px; color:#888;">Update Display Name</label>
-      <input type="text" id="setDisplayName" placeholder="New Name">
-      
-      <label style="font-size:12px; color:#888;">Update Photo URL</label>
-      <input type="text" id="setPhotoUrl" placeholder="Image link (https://...)">
-      
-      <button class="submit-btn" onclick="handleUpdateSettings()">Save Changes</button>
-      <button onclick="closeModal('settingsModal')" style="background:none; border:none; color:#888; margin-top:10px;">Close</button>
+      <h2>Settings</h2>
+      <input type="text" id="setDisplayName" placeholder="Change Username">
+      <input type="text" id="setPhotoUrl" placeholder="Photo URL">
+      <button onclick="handleUpdateSettings()" style="background:#28a745; color:white; border:none; padding:12px;">Save</button>
+      <button onclick="closeModal('settingsModal')" style="background:none; border:none; color:#888;">Close</button>
     </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, sendEmailVerification, signOut 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    // Import Firestore
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -137,58 +124,41 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // --- Observer ---
+    // --- 1. Unique Name Check Function ---
+    async function isUsernameTaken(name) {
+      const nameRef = doc(db, "usernames", name.toLowerCase().trim());
+      const nameSnap = await getDoc(nameRef);
+      return nameSnap.exists();
+    }
+
+    // --- 2. Theme Toggle Logic ---
+    window.toggleTheme = () => {
+      const root = document.documentElement;
+      const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', newTheme);
+      document.getElementById('themeBtn').innerText = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+    };
+
+    // --- 3. Observer ---
     onAuthStateChanged(auth, (user) => {
-      const loggedOutDiv = document.getElementById('loggedOutUI');
-      const loggedInDiv = document.getElementById('loggedInUI');
-      
+      const loggedInUI = document.getElementById('loggedInUI');
+      const loggedOutUI = document.getElementById('loggedOutUI');
       if (user) {
-        loggedOutDiv.style.display = 'none';
-        loggedInDiv.style.display = 'flex';
-        document.getElementById('loggedOutMessage').style.display = 'none';
-        
-        // Update Header
-        document.getElementById('userGreeting').innerText = user.displayName || user.email.split('@')[0];
+        loggedInUI.style.display = 'flex';
+        loggedOutUI.style.display = 'none';
+        document.getElementById('userGreeting').innerText = user.displayName;
         document.getElementById('headerProfilePic').src = user.photoURL || "https://www.w3schools.com/howto/img_avatar.png";
-        
-        // Pre-fill Settings fields
-        document.getElementById('setDisplayName').value = user.displayName || "";
-        document.getElementById('setPhotoUrl').value = user.photoURL || "";
-
-        // Verification Logic
-        if (user.emailVerified) {
-          document.getElementById('kiwiImage').style.display = 'inline-block';
-          document.getElementById('verifyWarning').style.display = 'none';
-        } else {
-          document.getElementById('kiwiImage').style.display = 'none';
-          document.getElementById('verifyWarning').style.display = 'block';
-        }
+        if (user.emailVerified) document.getElementById('kiwiImage').style.display = 'inline-block';
       } else {
-        loggedOutDiv.style.display = 'block';
-        loggedInDiv.style.display = 'none';
-        document.getElementById('loggedOutMessage').style.display = 'block';
+        loggedInUI.style.display = 'none';
+        loggedOutUI.style.display = 'block';
         document.getElementById('kiwiImage').style.display = 'none';
-        document.getElementById('verifyWarning').style.display = 'none';
       }
     });
 
-    // --- Modal Management ---
-    let authMode = 'signup';
-    window.openAuthModal = (mode) => {
-      authMode = mode;
-      document.getElementById('authTitle').innerText = mode === 'login' ? 'Login' : 'Create Account';
-      document.getElementById('regName').style.display = mode === 'login' ? 'none' : 'block';
-      document.getElementById('authModal').style.display = 'flex';
-    };
-
-    window.openSettingsModal = () => {
-      document.getElementById('settingsModal').style.display = 'flex';
-    };
-
-    window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
-
-    // --- Auth Logic ---
+    // --- 4. Auth with Unique Name Logic ---
     window.handleAuth = async () => {
       const email = document.getElementById('authEmail').value;
       const pass = document.getElementById('authPw').value;
@@ -196,10 +166,18 @@
 
       try {
         if (authMode === 'signup') {
+          // Check if name exists in Firestore
+          const taken = await isUsernameTaken(name);
+          if (taken) return alert("That username is already taken!");
+
           const res = await createUserWithEmailAndPassword(auth, email, pass);
+          
+          // Claim the name in Firestore
+          await setDoc(doc(db, "usernames", name.toLowerCase().trim()), { uid: res.user.uid });
+          
           await updateProfile(res.user, { displayName: name });
           await sendEmailVerification(res.user);
-          alert("Verify your email to see the Kiwi!");
+          alert("Signed up! Check email.");
         } else {
           await signInWithEmailAndPassword(auth, email, pass);
         }
@@ -207,22 +185,29 @@
       } catch (e) { alert(e.message); }
     };
 
-    // --- Update Profile Logic ---
-    window.handleUpdateSettings = async () => {
-      const newName = document.getElementById('setDisplayName').value;
-      const newPhoto = document.getElementById('setPhotoUrl').value;
-
-      try {
-        await updateProfile(auth.currentUser, {
-          displayName: newName,
-          photoURL: newPhoto
-        });
-        alert("Profile Updated!");
-        closeModal('settingsModal');
-      } catch (e) { alert(e.message); }
+    // --- Boilerplate Window Functions ---
+    let authMode = 'signup';
+    window.openAuthModal = (mode) => {
+      authMode = mode;
+      document.getElementById('regName').style.display = mode === 'login' ? 'none' : 'block';
+      document.getElementById('authModal').style.display = 'flex';
     };
-
+    window.openSettingsModal = () => document.getElementById('settingsModal').style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
     window.handleLogout = () => signOut(auth);
+    window.handleUpdateSettings = async () => {
+        const newName = document.getElementById('setDisplayName').value;
+        const newPhoto = document.getElementById('setPhotoUrl').value;
+        try {
+            if(newName !== auth.currentUser.displayName) {
+                if(await isUsernameTaken(newName)) return alert("Username taken!");
+                await setDoc(doc(db, "usernames", newName.toLowerCase().trim()), { uid: auth.currentUser.uid });
+            }
+            await updateProfile(auth.currentUser, { displayName: newName, photoURL: newPhoto });
+            alert("Updated!");
+            location.reload();
+        } catch(e) { alert(e.message); }
+    };
   </script>
 </body>
 </html>
