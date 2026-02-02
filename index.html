@@ -26,36 +26,46 @@
     }
 
     input { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-    .submit-btn { background: #28a745; color: white; border: none; padding: 12px; font-weight: bold; }
+    .submit-btn { background: #28a745; color: white; border: none; padding: 12px; font-weight: bold; margin-top: 10px; }
+    .reset-link { font-size: 12px; color: #007bff; cursor: pointer; text-align: center; margin-top: 15px; text-decoration: underline; }
   </style>
 </head>
 <body>
 
   <div class="auth-buttons">
-    <button onclick="openModal()">Sign Up</button>
+    <button onclick="openModal('login')">Login</button>
+    <button onclick="openModal('signup')">Sign Up</button>
   </div>
 
   <img src="kiwi.jpg" alt="brah" width="200" />
 
-  <div id="signUpModal" class="modal-overlay">
+  <div id="authModal" class="modal-overlay">
     <div class="modal-content">
-      <h2>Create Account</h2>
+      <h2 id="modalTitle">Create Account</h2>
       <input type="email" id="emailInput" placeholder="Enter Email" required>
-      <input type="password" id="pwInput" placeholder="Create Password" required>
+      <input type="password" id="pwInput" placeholder="Password" required>
       
       <label style="font-size: 12px; margin-bottom: 10px;">
         <input type="checkbox" onclick="togglePassword()"> Show Password
       </label>
 
-      <button class="submit-btn" onclick="handleSignUp()">Join Now</button>
-      <button onclick="closeModal()" style="background:none; border:none; color:grey; margin-top:10px;">Cancel</button>
+      <button id="mainAuthBtn" class="submit-btn" onclick="handleAuthAction()">Join Now</button>
+      
+      <span class="reset-link" onclick="handlePasswordReset()">Forgot Password?</span>
+      
+      <button onclick="closeModal()" style="background:none; border:none; color:grey; margin-top:10px; cursor:pointer;">Cancel</button>
     </div>
   </div>
 
   <script type="module">
-    // 1. Import Auth specifically
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      sendEmailVerification, 
+      sendPasswordResetEmail 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -66,17 +76,21 @@
       appId: "1:512511154228:web:8f97e9c75b3800f6d65261"
     };
 
-    // 2. Initialize
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // 3. Attach functions to 'window' so the HTML buttons can see them
-    window.openModal = () => { 
-      document.getElementById('signUpModal').style.display = 'flex'; 
+    // Track which mode the user is in
+    let currentMode = 'signup';
+
+    window.openModal = (mode) => { 
+      currentMode = mode;
+      document.getElementById('modalTitle').innerText = mode === 'login' ? 'Login' : 'Create Account';
+      document.getElementById('mainAuthBtn').innerText = mode === 'login' ? 'Login' : 'Join Now';
+      document.getElementById('authModal').style.display = 'flex'; 
     };
 
     window.closeModal = () => { 
-      document.getElementById('signUpModal').style.display = 'none'; 
+      document.getElementById('authModal').style.display = 'none'; 
     };
 
     window.togglePassword = () => {
@@ -84,20 +98,39 @@
       x.type = (x.type === "password") ? "text" : "password";
     };
 
-    // 4. The actual Sign Up logic
-    window.handleSignUp = async () => {
+    // Main Login / Sign Up Function
+    window.handleAuthAction = async () => {
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('pwInput').value;
 
-      if(!email || !password) {
-        alert("Please fill in all fields");
-        return;
-      }
+      if(!email || !password) return alert("Please fill in all fields");
 
       try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        alert("Account Created! Welcome " + userCredential.user.email);
+        if (currentMode === 'signup') {
+          // 1. CREATE USER
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          // 2. SEND VERIFICATION EMAIL
+          await sendEmailVerification(userCredential.user);
+          alert("Account created! A verification email has been sent to " + email);
+        } else {
+          // LOGIN USER
+          await signInWithEmailAndPassword(auth, email, password);
+          alert("Success! You are now logged in.");
+        }
         window.closeModal();
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    };
+
+    // Password Reset Function
+    window.handlePasswordReset = async () => {
+      const email = document.getElementById('emailInput').value;
+      if(!email) return alert("Please enter your email address first to reset password.");
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        alert("Password reset email sent to " + email);
       } catch (error) {
         alert("Error: " + error.message);
       }
