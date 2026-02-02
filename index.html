@@ -44,7 +44,10 @@
     <div class="modal-content">
       <h2>Create Account</h2>
       <input type="email" placeholder="Enter Email" required>
-      <input type="password" placeholder="Create Password" required>
+    <input type="password" id="pwInput" placeholder="Create Password" required>
+<label style="font-size: 12px;">
+  <input type="checkbox" onclick="togglePassword()"> Show Password
+</label>
       <button class="submit-btn" onclick="closeModal()">Join Now</button>
       <button onclick="closeModal()" style="background:none; border:none; color:grey; margin-top:10px;">Cancel</button>
     </div>
@@ -53,6 +56,10 @@
   <script>
     function openModal() { document.getElementById('signUpModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('signUpModal').style.display = 'none'; }
+    function togglePassword() {
+  const x = document.getElementById("pwInput");
+  x.type = (x.type === "password") ? "text" : "password";
+}
   </script>
 
 </body>
