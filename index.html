@@ -2,7 +2,6 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Secret Kiwi Vault</title>
   <style>
     :root[data-theme="dark"] {
@@ -14,93 +13,82 @@
       --card-bg: #ffffff; --input-bg: #f5f6f7; --btn-bg: #e4e6eb; --border-color: #ddd;
     }
 
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; transition: 0.3s; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-    header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
+    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
+    header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
     
-    .auth-buttons { margin-right: 20px; display: flex; align-items: center; gap: 10px; }
-    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; transition: 0.2s; }
-    button:hover { opacity: 0.8; }
-
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; display: flex; flex-direction: column; border: 1px solid var(--border-color); max-height: 80vh; overflow-y: auto; }
-    
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 400px; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
     input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
 
-    #chatBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; }
-    .msg { font-size: 14px; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
-    .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-right: 5px; }
-    .report-btn { font-size: 10px; color: #ff9f1c; background: none; border: 1px solid #ff9f1c; padding: 2px 5px; border-radius: 4px; float: right; cursor: pointer; }
+    #chatBox { height: 300px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
+    .msg { margin-bottom: 12px; font-size: 14px; position: relative; border-bottom: 1px solid #333; padding-bottom: 5px; }
+    .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
     
-    #adminBtn { display: none; background: #ff9f1c; color: #000; border: none; }
-    .admin-log { background: rgba(255, 0, 0, 0.1); border-left: 4px solid #ff4d4d; padding: 8px; margin-bottom: 8px; font-size: 12px; }
-    .nuke-btn { background: #780000; color: white; width: 100%; margin: 10px 0; border: none; padding: 12px; }
-
-    .online-indicator { font-size: 12px; color: #44eb44; display: flex; align-items: center; gap: 5px; }
-    .dot { width: 8px; height: 8px; background: #44eb44; border-radius: 50%; }
+    .report-btn { font-size: 10px; color: #ff9f1c; background: none; border: none; cursor: pointer; float: right; }
+    
+    #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
+    .nuke-btn { background: #780000; color: white; padding: 12px; border: none; width: 100%; margin-top: 10px; }
+    .report-log { background: rgba(255,0,0,0.1); padding: 8px; border-radius: 5px; margin-bottom: 5px; font-size: 12px; border-left: 3px solid red; }
   </style>
 </head>
 <body>
 
   <header>
     <div class="auth-buttons">
-      <button onclick="toggleTheme()">🌓 Theme</button>
-      <button id="adminBtn" onclick="openModal('adminModal')">🛡️ Admin</button>
+      <button onclick="toggleTheme()">Mode</button>
+      <button id="adminBtn" onclick="openModal('adminModal')">Admin Panel</button>
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
         <span id="userGreeting"></span>
-        <button onclick="openModal('chatModal')">💬 Chat</button>
-        <button onclick="handleLogout()" style="background:#780000; color:white; border:none;">Logout</button>
-      </div>
-      <div id="loggedOutUI">
-        <button onclick="openModal('authModal')">🔑 Login</button>
+        <button onclick="openModal('friendsModal')">Social</button>
+        <button onclick="handleLogout()" style="background:#780000; color:white;">Logout</button>
       </div>
     </div>
   </header>
 
-  <main style="text-align:center; padding-top:60px;">
+  <div class="content" style="text-align:center; padding-top:40px;">
     <h1>The Secret Kiwi Vault</h1>
-    <img id="kiwiImage" src="kiwi.jpg" width="280" style="display:none; border-radius:20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
-    <p id="welcomeMsg">Please login to access the vault.</p>
-  </main>
+    <img id="kiwiImage" src="kiwi.jpg" width="200" style="display:none; border-radius:15px;" />
+  </div>
 
   <div id="adminModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>Admin Dashboard</h2>
-      <button class="nuke-btn" onclick="clearChat()">☢️ WIPE GLOBAL CHAT</button>
+    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+      <h2>Admin Control</h2>
+      <button class="nuke-btn" onclick="clearGlobalChat()">☢ CLEAR GLOBAL CHAT</button>
+      
+      <h4>User Reports</h4>
+      <div id="reportList">No new reports.</div>
+
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-      <h4>Shadow Ban User</h4>
+      <h4>Shadow Ban</h4>
       <div style="display:flex; gap:5px;">
-        <input type="text" id="banInput" placeholder="Username..." style="flex:1;">
-        <button onclick="banUser()" style="background:#ff4d4d; border:none;">Ban</button>
+        <input type="text" id="banTarget" placeholder="Username" style="flex:1;">
+        <button onclick="handleBanUser()" style="background:#ff4d4d; color:white;">Ban</button>
       </div>
-      <h4>Active Reports</h4>
-      <div id="adminReports">No reports yet.</div>
       <button onclick="closeModal('adminModal')" style="margin-top:15px;">Close</button>
     </div>
   </div>
 
-  <div id="chatModal" class="modal-overlay">
-    <div class="modal-content" style="max-width:500px;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>Global Vault Chat</h3>
-        <div class="online-indicator"><div class="dot"></div> <span id="onlineCount">0</span></div>
-      </div>
+  <div id="friendsModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Global Chat</h2>
       <div id="chatBox"></div>
       <div style="display:flex; gap:5px; margin-top:10px;">
-        <input type="text" id="chatInput" placeholder="Say something..." style="flex:1;">
-        <button onclick="sendMsg()" style="background:#4cc9f0; color:black; border:none;">Send</button>
+        <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
+        <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
       </div>
-      <button onclick="closeModal('chatModal')" style="margin-top:10px; background:none; border:none; color:#888;">Close Chat</button>
+      <button onclick="closeModal('friendsModal')" style="margin-top:10px;">Close</button>
     </div>
   </div>
 
   <div id="authModal" class="modal-overlay">
     <div class="modal-content">
-      <h2 id="authTitle">Vault Access</h2>
+      <h2 id="authTitle">Vault Login</h2>
       <input type="text" id="regName" placeholder="Username">
       <input type="email" id="authEmail" placeholder="Email">
       <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Login / Sign Up</button>
-      <button onclick="closeModal('authModal')" style="margin-top:10px; background:none; border:none;">Cancel</button>
+      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Access Vault</button>
     </div>
   </div>
 
@@ -123,104 +111,97 @@
     const db = getFirestore(app);
 
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
-    let isBanned = false;
+    let isShadowBanned = false;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('loggedOutUI').style.display = 'none';
-        document.getElementById('userGreeting').innerText = `Hello, ${user.displayName}`;
+        document.getElementById('userGreeting').innerText = user.displayName;
         document.getElementById('kiwiImage').style.display = 'inline-block';
-        document.getElementById('welcomeMsg').style.display = 'none';
+        closeModal('authModal');
 
-        // Security check for Ban and Admin
-        const banCheck = await getDoc(doc(db, "banned_users", user.uid));
-        if (banCheck.exists()) isBanned = true;
+        const banDoc = await getDoc(doc(db, "banned_users", user.uid));
+        if (banDoc.exists()) isShadowBanned = true;
 
-        if (user.uid === OWNER_UID) {
+        if(user.uid === OWNER_UID) {
           document.getElementById('adminBtn').style.display = 'block';
-          loadReports();
+          listenToReports();
         }
-        loadChat();
+        initChat();
       } else {
-        document.getElementById('loggedInUI').style.display = 'none';
-        document.getElementById('loggedOutUI').style.display = 'block';
-        document.getElementById('kiwiImage').style.display = 'none';
+        openModal('authModal');
       }
     });
 
-    // Chat Logic
-    function loadChat() {
-      const q = query(collection(db, "chats/global/messages"), orderBy("time", "asc"));
+    function initChat() {
+      const q = query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc"));
       onSnapshot(q, (snap) => {
         const box = document.getElementById('chatBox');
         box.innerHTML = "";
-        snap.forEach(doc => {
-          const d = doc.data();
-          // Shadow Ban Logic: If msg is flagged shadow, only sender and admin see it
-          if (d.shadow && d.senderId !== auth.currentUser?.uid && auth.currentUser?.uid !== OWNER_UID) return;
+        snap.forEach(m => {
+          const d = m.data();
+          if (d.shadow && d.senderId !== auth.currentUser.uid && auth.currentUser.uid !== OWNER_UID) return;
           
-          const isOwner = d.senderId === OWNER_UID ? '<span class="owner-tag">[Admin]</span>' : '';
+          const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
           box.innerHTML += `
             <div class="msg">
-              <span class="report-btn" onclick="reportMsg('${d.sender}', '${d.text}')">🚩</span>
-              <b>${isOwner}${d.sender}</b>: ${d.text}
+              <button class="report-btn" onclick="reportUser('${m.id}', '${d.sender}', '${d.text}')">🚩 Report</button>
+              <b>${ownerLabel}${d.sender}</b>: ${d.text}
             </div>`;
         });
         box.scrollTop = box.scrollHeight;
       });
-      onSnapshot(collection(db, "online_status"), s => document.getElementById('onlineCount').innerText = s.size);
     }
 
-    window.sendMsg = async () => {
+    window.sendMessage = async () => {
       const val = document.getElementById('chatInput').value;
       if (!val) return;
-      await addDoc(collection(db, "chats/global/messages"), {
-        sender: auth.currentUser.displayName,
-        senderId: auth.currentUser.uid,
-        text: val,
-        time: Date.now(),
-        shadow: isBanned
+      await addDoc(collection(db, "chats", "global_room", "messages"), {
+        senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
+        text: val, time: Date.now(), shadow: isShadowBanned
       });
       document.getElementById('chatInput').value = "";
     };
 
-    // Admin & Reporting
-    window.reportMsg = async (who, what) => {
-      if(!confirm(`Report ${who}?`)) return;
-      await addDoc(collection(db, "reports"), { reporter: auth.currentUser.displayName, offender: who, content: what, time: Date.now() });
-      alert("Reported.");
+    window.reportUser = async (msgId, offenderName, text) => {
+      if(!confirm(`Report ${offenderName} for this message?`)) return;
+      await addDoc(collection(db, "reports"), {
+        reporter: auth.currentUser.displayName,
+        offender: offenderName,
+        message: text,
+        time: Date.now()
+      });
+      alert("Report sent to Admin.");
     };
 
-    function loadReports() {
-      onSnapshot(query(collection(db, "reports"), orderBy("time", "desc")), snap => {
-        const div = document.getElementById('adminReports');
-        div.innerHTML = "";
+    function listenToReports() {
+      onSnapshot(query(collection(db, "reports"), orderBy("time", "desc")), (snap) => {
+        const list = document.getElementById('reportList');
+        list.innerHTML = "";
         snap.forEach(d => {
           const r = d.data();
-          div.innerHTML += `<div class="admin-log"><b>${r.offender}</b> reported by ${r.reporter}<br>"${r.content}"</div>`;
+          list.innerHTML += `<div class="report-log"><b>${r.reporter}</b> reported <b>${r.offender}</b>: "${r.message}"</div>`;
         });
       });
     }
 
-    window.banUser = async () => {
-      const name = document.getElementById('banInput').value.toLowerCase().trim();
-      const userDoc = await getDoc(doc(db, "usernames", name));
-      if (userDoc.exists()) {
-        await setDoc(doc(db, "banned_users", userDoc.data().uid), { name, banned: true });
-        alert(`${name} shadow banned.`);
-      } else alert("User not found.");
+    window.handleBanUser = async () => {
+      const username = document.getElementById('banTarget').value.toLowerCase().trim();
+      const userSnap = await getDoc(doc(db, "usernames", username));
+      if (userSnap.exists()) {
+        await setDoc(doc(db, "banned_users", userSnap.data().uid), { username, banned: true });
+        alert(username + " shadow banned.");
+      } else { alert("Not found."); }
     };
 
-    window.clearChat = async () => {
-      if(!confirm("Wipe chat?")) return;
-      const msgs = await getDocs(collection(db, "chats/global/messages"));
+    window.clearGlobalChat = async () => {
+      if(!confirm("Wipe all messages?")) return;
+      const q = await getDocs(collection(db, "chats", "global_room", "messages"));
       const batch = writeBatch(db);
-      msgs.forEach(m => batch.delete(m.ref));
+      q.forEach(d => batch.delete(d.ref));
       await batch.commit();
     };
 
-    // Auth Helpers
     window.handleAuth = async () => {
       const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
       try {
@@ -228,16 +209,13 @@
         await updateProfile(res.user, { displayName: n });
         await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid });
         location.reload();
-      } catch { 
-        await signInWithEmailAndPassword(auth, e, p); 
-        location.reload(); 
-      }
+      } catch { await signInWithEmailAndPassword(auth, e, p); location.reload(); }
     };
 
     window.handleLogout = () => signOut(auth).then(() => location.reload());
-    window.toggleTheme = () => document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+    window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
   </script>
 </body>
 </html>
