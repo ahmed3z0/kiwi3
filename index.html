@@ -41,7 +41,7 @@
     }
     .modal-content {
       background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; 
-      width: 320px; display: flex; flex-direction: column; border: 1px solid var(--border-color);
+      width: 350px; display: flex; flex-direction: column; border: 1px solid var(--border-color);
     }
     input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
     
@@ -55,13 +55,16 @@
 
     /* Chat Styling */
     #chatBox { height: 250px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border-color); }
-    .msg { margin-bottom: 12px; font-size: 14px; position: relative; }
+    .msg { margin-bottom: 12px; font-size: 14px; }
     .msg-header { display: flex; justify-content: space-between; align-items: center; }
     .msg-name { font-weight: bold; color: #4cc9f0; }
     .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 12px; margin-right: 5px; }
     .msg-time { font-size: 10px; color: gray; }
-    .msg-text { display: block; margin-top: 2px; }
-    .del-btn { background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 10px; padding: 0 5px; }
+    .del-btn { background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 10px; }
+
+    /* Close Button for Chat */
+    .chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .close-chat-btn { background: none; border: none; color: #ff4d4d; font-size: 20px; font-weight: bold; line-height: 1; }
   </style>
 </head>
 <body>
@@ -92,9 +95,8 @@
 
     <div id="verifyWarning" class="warning-box">
       <h3>Verification Required</h3>
-      <p>Check your inbox to verify your email.</p>
-      <button onclick="handleVerifyCheck()" style="background: #ffe066; color: #332b00; border: none; margin-bottom: 10px;">I've Verified!</button>
-      <button onclick="resendVerification()" style="background: transparent; color: #ffe066; border: 1px solid #ffe066;">Resend Email</button>
+      <button onclick="handleVerifyCheck()" style="background: #ffe066; color: #332b00; border: none; margin-bottom: 10px; width: 100%;">I've Verified!</button>
+      <button onclick="resendVerification()" style="background: transparent; color: #ffe066; border: 1px solid #ffe066; width: 100%;">Resend Email</button>
     </div>
   </div>
 
@@ -110,27 +112,35 @@
   </div>
 
   <div id="friendsModal" class="modal-overlay">
-    <div class="modal-content" style="width: 380px;">
+    <div class="modal-content">
       <h2>Social Hub</h2>
-      <div style="display:flex; gap:5px;">
-        <input type="text" id="friendSearch" placeholder="Friend's Username" style="flex:1">
-        <button onclick="sendFriendRequest()" style="background:#28a745; border:none;">Add</button>
+      <div style="display:flex; gap:5px; margin-bottom: 10px;">
+        <button onclick="showFriendList()" style="flex:1; font-size:12px">Friends</button>
+        <button onclick="openChat('global', 'Global Chat')" style="flex:1; font-size:12px; background:#4cc9f0; color:black;">Global</button>
       </div>
-      
-      <div id="requestSection"></div>
-      
-      <h4>My Friends</h4>
-      <div id="friendsList" style="margin-bottom:10px;"></div>
+
+      <div id="socialListArea">
+        <div style="display:flex; gap:5px;">
+          <input type="text" id="friendSearch" placeholder="Friend's Username" style="flex:1">
+          <button onclick="sendFriendRequest()" style="background:#28a745; border:none;">Add</button>
+        </div>
+        <div id="requestSection"></div>
+        <h4>Friends</h4>
+        <div id="friendsList"></div>
+      </div>
 
       <div id="chatSection" style="display:none; border-top: 1px solid var(--border-color); padding-top:10px;">
-        <h4 id="chattingWith">Chat</h4>
+        <div class="chat-header">
+          <h4 id="chattingWith" style="margin:0">Chat</h4>
+          <button class="close-chat-btn" onclick="closeChatArea()">×</button>
+        </div>
         <div id="chatBox"></div>
         <div style="display:flex; gap:5px;">
           <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
           <button onclick="sendMessage()" style="background:#4cc9f0; color:black; border:none;">Send</button>
         </div>
       </div>
-      <button onclick="closeModal('friendsModal')" style="background:none; border:none; color:#888; margin-top:10px;">Close</button>
+      <button onclick="closeModal('friendsModal')" style="background:none; border:none; color:#888; margin-top:10px;">Close Social</button>
     </div>
   </div>
 
@@ -162,111 +172,88 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // CHANGE THIS TO YOUR ACTUAL UID FROM FIREBASE CONSOLE TO GET THE RED TAG
-    const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
-
-    let activeChatFriendId = null;
+    const OWNER_UID = "YOUR_UID_HERE"; 
+    let activeChatId = null;
     let chatUnsubscribe = null;
     let authMode = 'signup';
 
     onAuthStateChanged(auth, (user) => {
       const loggedInUI = document.getElementById('loggedInUI');
       const loggedOutUI = document.getElementById('loggedOutUI');
-      const kiwi = document.getElementById('kiwiImage');
-      const warning = document.getElementById('verifyWarning');
-      const welcome = document.getElementById('loggedOutMessage');
-
       if (user) {
         loggedInUI.style.display = 'flex';
         loggedOutUI.style.display = 'none';
-        welcome.style.display = 'none';
-        document.getElementById('userGreeting').innerText = user.displayName || user.email.split('@')[0];
+        document.getElementById('loggedOutMessage').style.display = 'none';
+        document.getElementById('userGreeting').innerText = user.displayName;
         document.getElementById('headerProfilePic').src = user.photoURL || "https://www.w3schools.com/howto/img_avatar.png";
-
-        if (user.emailVerified) {
-          kiwi.style.display = 'inline-block';
-          warning.style.display = 'none';
-        } else {
-          kiwi.style.display = 'none';
-          warning.style.display = 'block';
-        }
+        
+        if (user.emailVerified) document.getElementById('kiwiImage').style.display = 'inline-block';
+        else document.getElementById('verifyWarning').style.display = 'block';
+        
         initSocialListeners(user);
       } else {
         loggedInUI.style.display = 'none';
         loggedOutUI.style.display = 'block';
-        welcome.style.display = 'block';
-        kiwi.style.display = 'none';
-        warning.style.display = 'none';
+        document.getElementById('loggedOutMessage').style.display = 'block';
+        document.getElementById('kiwiImage').style.display = 'none';
+        document.getElementById('verifyWarning').style.display = 'none';
       }
     });
 
-    // --- Chat Logic ---
-    window.openChat = (fUid, fName) => {
-      activeChatFriendId = fUid;
+    window.openChat = (targetId, title) => {
+      document.getElementById('socialListArea').style.display = 'none';
       document.getElementById('chatSection').style.display = 'block';
-      document.getElementById('chattingWith').innerText = "Chat with " + fName;
+      document.getElementById('chattingWith').innerText = title;
+      
       if (chatUnsubscribe) chatUnsubscribe();
-
-      const chatId = [auth.currentUser.uid, fUid].sort().join("_");
-      const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
+      
+      activeChatId = targetId === 'global' ? 'global_room' : [auth.currentUser.uid, targetId].sort().join("_");
+      const q = query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc"));
 
       chatUnsubscribe = onSnapshot(q, (snap) => {
         const box = document.getElementById('chatBox');
         box.innerHTML = "";
         snap.forEach(m => {
           const data = m.data();
-          const isMe = data.senderId === auth.currentUser.uid;
           const isOwner = data.senderId === OWNER_UID;
+          const isMe = data.senderId === auth.currentUser.uid;
           const time = new Date(data.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
           box.innerHTML += `
             <div class="msg">
               <div class="msg-header">
-                <div>
-                  ${isOwner ? '<span class="owner-tag">[Owner]</span>' : ''}
-                  <span class="msg-name">${data.sender}</span>
-                  <span class="msg-time">${time}</span>
-                </div>
-                ${isMe ? `<button class="del-btn" onclick="deleteMessage('${chatId}', '${m.id}')">Delete</button>` : ''}
+                <div>${isOwner ? '<span class="owner-tag">[Owner]</span>' : ''}<span class="msg-name">${data.sender}</span> <span class="msg-time">${time}</span></div>
+                ${isMe ? `<button class="del-btn" onclick="deleteMessage('${activeChatId}', '${m.id}')">Delete</button>` : ''}
               </div>
-              <span class="msg-text">${data.text}</span>
+              <span>${data.text}</span>
             </div>`;
         });
         box.scrollTop = box.scrollHeight;
       });
     };
 
+    window.closeChatArea = () => {
+      document.getElementById('chatSection').style.display = 'none';
+      document.getElementById('socialListArea').style.display = 'block';
+      if (chatUnsubscribe) chatUnsubscribe();
+    };
+
+    window.showFriendList = () => closeChatArea();
+
     window.sendMessage = async () => {
       const input = document.getElementById('chatInput');
-      if (!input.value || !activeChatFriendId) return;
-      const chatId = [auth.currentUser.uid, activeChatFriendId].sort().join("_");
-      await addDoc(collection(db, "chats", chatId, "messages"), {
-        senderId: auth.currentUser.uid,
-        sender: auth.currentUser.displayName,
-        text: input.value,
-        time: Date.now()
+      if (!input.value || !activeChatId) return;
+      await addDoc(collection(db, "chats", activeChatId, "messages"), {
+        senderId: auth.currentUser.uid, sender: auth.currentUser.displayName,
+        text: input.value, time: Date.now()
       });
       input.value = "";
     };
 
-    window.deleteMessage = async (chatId, msgId) => {
-      if(confirm("Delete this message?")) {
-        await deleteDoc(doc(db, "chats", chatId, "messages", msgId));
-      }
+    window.deleteMessage = async (cId, mId) => {
+      if(confirm("Delete message?")) await deleteDoc(doc(db, "chats", cId, "messages", mId));
     };
 
-    // --- Boilerplate Restored ---
-    window.handleVerifyCheck = async () => {
-      await auth.currentUser.reload();
-      if (auth.currentUser.emailVerified) location.reload();
-      else alert("Not verified yet!");
-    };
-
-    window.resendVerification = async () => {
-      await sendEmailVerification(auth.currentUser);
-      alert("Sent!");
-    };
-
+    // --- Core UI & Social Support ---
     function initSocialListeners(user) {
       onSnapshot(query(collection(db, "requests"), where("to", "==", user.uid)), (snap) => {
         const div = document.getElementById('requestSection');
@@ -278,42 +265,35 @@
           </div>`;
         });
       });
-
       onSnapshot(doc(db, "users", user.uid), (d) => {
         const list = document.getElementById('friendsList');
         list.innerHTML = "";
         d.data()?.friends?.forEach(f => {
           const btn = document.createElement('button');
-          btn.innerText = "💬 " + f.name;
-          btn.style.cssText = "width:100%; margin-top:5px; text-align:left;";
+          btn.innerText = "💬 " + f.name; btn.style.cssText = "width:100%; margin-top:5px; text-align:left;";
           btn.onclick = () => openChat(f.uid, f.name);
           list.appendChild(btn);
         });
       });
     }
 
+    window.handleVerifyCheck = async () => { await auth.currentUser.reload(); if (auth.currentUser.emailVerified) location.reload(); else alert("Not verified!"); };
+    window.resendVerification = async () => { await sendEmailVerification(auth.currentUser); alert("Sent!"); };
     window.sendFriendRequest = async () => {
       const name = document.getElementById('friendSearch').value.toLowerCase().trim();
       const snap = await getDoc(doc(db, "usernames", name));
-      if (!snap.exists()) return alert("Not found");
-      await addDoc(collection(db, "requests"), {
-        from: auth.currentUser.uid, fromName: auth.currentUser.displayName,
-        to: snap.data().uid, status: "pending"
-      });
+      if (!snap.exists()) return alert("User not found");
+      await addDoc(collection(db, "requests"), { from: auth.currentUser.uid, fromName: auth.currentUser.displayName, to: snap.data().uid });
       alert("Sent!");
     };
-
     window.acceptFriend = async (id, fUid, fName) => {
       const u = auth.currentUser;
       await setDoc(doc(db, "users", u.uid), { friends: arrayUnion({uid: fUid, name: fName}) }, {merge:true});
       await setDoc(doc(db, "users", fUid), { friends: arrayUnion({uid: u.uid, name: u.displayName}) }, {merge:true});
       await deleteDoc(doc(db, "requests", id));
     };
-
     window.handleAuth = async () => {
-      const e = document.getElementById('authEmail').value;
-      const p = document.getElementById('authPw').value;
-      const n = document.getElementById('regName').value;
+      const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
       try {
         if (authMode === 'signup') {
           const nameSnap = await getDoc(doc(db, "usernames", n.toLowerCase()));
@@ -326,7 +306,6 @@
         closeModal('authModal');
       } catch (err) { alert(err.message); }
     };
-
     window.handleUpdateSettings = async () => {
       await updateProfile(auth.currentUser, { 
         displayName: document.getElementById('setDisplayName').value || auth.currentUser.displayName,
@@ -334,20 +313,11 @@
       });
       location.reload();
     };
-
     window.toggleTheme = () => {
-      const root = document.documentElement;
-      const t = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', t);
-      document.getElementById('themeBtn').innerText = t === 'dark' ? 'Light Mode' : 'Dark Mode';
+      const r = document.documentElement; const t = r.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      r.setAttribute('data-theme', t); document.getElementById('themeBtn').innerText = t === 'dark' ? 'Light Mode' : 'Dark Mode';
     };
-    window.openModal = (id, mode) => {
-      if(id==='authModal') {
-        authMode = mode;
-        document.getElementById('regName').style.display = mode === 'login' ? 'none' : 'block';
-      }
-      document.getElementById(id).style.display = 'flex';
-    };
+    window.openModal = (id, mode) => { if(id==='authModal'){authMode=mode; document.getElementById('regName').style.display=mode==='login'?'none':'block';} document.getElementById(id).style.display='flex'; };
     window.closeModal = (id) => document.getElementById(id).style.display = 'none';
     window.handleLogout = () => signOut(auth);
   </script>
