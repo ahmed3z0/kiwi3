@@ -6,6 +6,12 @@
     .auth-buttons { position: absolute; top: 20px; right: 20px; }
     button { padding: 8px 16px; margin-left: 10px; cursor: pointer; border-radius: 4px; }
 
+    /* Hide the Kiwi and the verification warning by default */
+    #kiwiImage, #verifyWarning { display: none; margin-top: 50px; }
+    
+    #loggedInUI { display: none; align-items: center; }
+    #loggedOutUI { display: block; }
+
     .modal-overlay {
       display: none; 
       position: fixed;
@@ -28,16 +34,38 @@
     input { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
     .submit-btn { background: #28a745; color: white; border: none; padding: 12px; font-weight: bold; margin-top: 10px; }
     .reset-link { font-size: 12px; color: #007bff; cursor: pointer; text-align: center; margin-top: 15px; text-decoration: underline; }
+    .logout-btn { background-color: #dc3545; color: white; border: none; }
+    
+    .warning-box { background: #fff3cd; color: #856404; padding: 15px; border-radius: 4px; border: 1px solid #ffeeba; }
   </style>
 </head>
 <body>
 
   <div class="auth-buttons">
-    <button onclick="openModal('login')">Login</button>
-    <button onclick="openModal('signup')">Sign Up</button>
+    <div id="loggedOutUI">
+      <button onclick="openModal('login')">Login</button>
+      <button onclick="openModal('signup')">Sign Up</button>
+    </div>
+
+    <div id="loggedInUI">
+      <span id="userGreeting" style="font-weight: bold; margin-right: 10px;"></span>
+      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
   </div>
 
-  <img src="kiwi.jpg" alt="brah" width="200" />
+  <div style="text-align: center; padding-top: 100px;">
+    <img id="kiwiImage" src="kiwi.jpg" alt="brah" width="200" />
+    
+    <div id="verifyWarning" class="warning-box">
+      <h3>Please Verify Your Email</h3>
+      <p>The Kiwi is shy. You must click the link sent to your email to see him.</p>
+      <button onclick="location.reload()">I've verified, show me the Kiwi!</button>
+    </div>
+
+    <div id="loggedOutMessage">
+      <h2>Welcome! Please Login to see the secret Kiwi.</h2>
+    </div>
+  </div>
 
   <div id="authModal" class="modal-overlay">
     <div class="modal-content">
@@ -50,9 +78,7 @@
       </label>
 
       <button id="mainAuthBtn" class="submit-btn" onclick="handleAuthAction()">Join Now</button>
-      
       <span class="reset-link" onclick="handlePasswordReset()">Forgot Password?</span>
-      
       <button onclick="closeModal()" style="background:none; border:none; color:grey; margin-top:10px; cursor:pointer;">Cancel</button>
     </div>
   </div>
@@ -64,7 +90,9 @@
       createUserWithEmailAndPassword, 
       signInWithEmailAndPassword, 
       sendEmailVerification, 
-      sendPasswordResetEmail 
+      sendPasswordResetEmail,
+      signOut,
+      onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -79,63 +107,78 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // Track which mode the user is in
-    let currentMode = 'signup';
+    // --- ENHANCED AUTH OBSERVER ---
+    onAuthStateChanged(auth, (user) => {
+      const loggedOutDiv = document.getElementById('loggedOutUI');
+      const loggedInDiv = document.getElementById('loggedInUI');
+      const greeting = document.getElementById('userGreeting');
+      const kiwi = document.getElementById('kiwiImage');
+      const warning = document.getElementById('verifyWarning');
+      const welcome = document.getElementById('loggedOutMessage');
 
+      if (user) {
+        loggedOutDiv.style.display = 'none';
+        loggedInDiv.style.display = 'flex';
+        welcome.style.display = 'none';
+        greeting.innerText = "Hi, " + (user.email.split('@')[0]);
+
+        // Check if email is verified
+        if (user.emailVerified) {
+          kiwi.style.display = 'inline-block';
+          warning.style.display = 'none';
+        } else {
+          kiwi.style.display = 'none';
+          warning.style.display = 'block';
+        }
+      } else {
+        loggedOutDiv.style.display = 'block';
+        loggedInDiv.style.display = 'none';
+        welcome.style.display = 'block';
+        kiwi.style.display = 'none';
+        warning.style.display = 'none';
+      }
+    });
+
+    // --- KEEPING YOUR PREVIOUS FUNCTIONS ---
+    let currentMode = 'signup';
     window.openModal = (mode) => { 
       currentMode = mode;
       document.getElementById('modalTitle').innerText = mode === 'login' ? 'Login' : 'Create Account';
       document.getElementById('mainAuthBtn').innerText = mode === 'login' ? 'Login' : 'Join Now';
       document.getElementById('authModal').style.display = 'flex'; 
     };
-
-    window.closeModal = () => { 
-      document.getElementById('authModal').style.display = 'none'; 
-    };
-
+    window.closeModal = () => { document.getElementById('authModal').style.display = 'none'; };
     window.togglePassword = () => {
       const x = document.getElementById("pwInput");
       x.type = (x.type === "password") ? "text" : "password";
     };
 
-    // Main Login / Sign Up Function
     window.handleAuthAction = async () => {
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('pwInput').value;
-
       if(!email || !password) return alert("Please fill in all fields");
-
       try {
         if (currentMode === 'signup') {
-          // 1. CREATE USER
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          // 2. SEND VERIFICATION EMAIL
           await sendEmailVerification(userCredential.user);
-          alert("Account created! A verification email has been sent to " + email);
+          alert("Success! Verification email sent.");
         } else {
-          // LOGIN USER
           await signInWithEmailAndPassword(auth, email, password);
-          alert("Success! You are now logged in.");
         }
         window.closeModal();
-      } catch (error) {
-        alert("Error: " + error.message);
-      }
+      } catch (error) { alert(error.message); }
     };
 
-    // Password Reset Function
+    window.handleLogout = async () => { await signOut(auth); };
+
     window.handlePasswordReset = async () => {
       const email = document.getElementById('emailInput').value;
-      if(!email) return alert("Please enter your email address first to reset password.");
-
+      if(!email) return alert("Enter email first.");
       try {
         await sendPasswordResetEmail(auth, email);
-        alert("Password reset email sent to " + email);
-      } catch (error) {
-        alert("Error: " + error.message);
-      }
+        alert("Reset email sent!");
+      } catch (error) { alert(error.message); }
     };
   </script>
-
 </body>
 </html>
