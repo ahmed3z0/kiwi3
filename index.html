@@ -2,30 +2,19 @@
 <html lang="en" data-theme="dark">
 <head>
   <style>
-    /* 1. Theme Variables */
     :root[data-theme="dark"] {
-      --bg-color: #121212;
-      --text-color: #ffffff;
-      --header-bg: #0d1b2a;
-      --card-bg: #1e1e1e;
-      --input-bg: #2a2a2a;
-      --btn-bg: #1b263b;
-      --border-color: #333;
+      --bg-color: #121212; --text-color: #ffffff; --header-bg: #0d1b2a;
+      --card-bg: #1e1e1e; --input-bg: #2a2a2a; --btn-bg: #1b263b; --border-color: #333;
     }
     :root[data-theme="light"] {
-      --bg-color: #f0f2f5;
-      --text-color: #1c1e21;
-      --header-bg: #ffffff;
-      --card-bg: #ffffff;
-      --input-bg: #f5f6f7;
-      --btn-bg: #e4e6eb;
-      --border-color: #ddd;
+      --bg-color: #f0f2f5; --text-color: #1c1e21; --header-bg: #ffffff;
+      --card-bg: #ffffff; --input-bg: #f5f6f7; --btn-bg: #e4e6eb; --border-color: #ddd;
     }
 
     body { 
-      font-family: 'Segoe UI', sans-serif; 
-      background-color: var(--bg-color); color: var(--text-color); 
-      margin: 0; transition: 0.3s; display: flex; flex-direction: column; align-items: center;
+      font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); 
+      color: var(--text-color); margin: 0; transition: 0.3s; 
+      display: flex; flex-direction: column; align-items: center;
     }
 
     header {
@@ -44,19 +33,23 @@
       font-weight: 600; transition: 0.3s; 
     }
 
-    /* 4. Modals */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100;
     }
     .modal-content {
       background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; 
-      width: 300px; display: flex; flex-direction: column; border: 1px solid var(--border-color);
+      width: 320px; display: flex; flex-direction: column; border: 1px solid var(--border-color);
     }
     input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
     
     .content { padding-top: 60px; text-align: center; }
     #kiwiImage { display: none; margin-top: 30px; border-radius: 12px; border: 5px solid var(--header-bg); }
+
+    /* Chat Styling */
+    #chatBox { height: 200px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: left; }
+    .msg { margin-bottom: 8px; font-size: 14px; }
+    .msg-name { font-weight: bold; color: #4cc9f0; }
   </style>
 </head>
 <body>
@@ -64,26 +57,25 @@
   <header>
     <div class="auth-buttons">
       <button onclick="toggleTheme()" id="themeBtn">Light Mode</button>
-
       <div id="loggedOutUI">
-        <button onclick="openAuthModal('login')">Login</button>
-        <button onclick="openAuthModal('signup')">Sign Up</button>
+        <button onclick="openModal('authModal', 'login')">Login</button>
+        <button onclick="openModal('authModal', 'signup')">Sign Up</button>
       </div>
-
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
         <div class="profile-area">
           <span id="userGreeting"></span>
-          <img id="headerProfilePic" class="profile-pic" src="https://via.placeholder.com/40">
+          <img id="headerProfilePic" class="profile-pic" src="">
         </div>
-        <button onclick="openSettingsModal()">Settings</button>
+        <button onclick="document.getElementById('friendsModal').style.display='flex'">Friends</button>
+        <button onclick="document.getElementById('settingsModal').style.display='flex'">Settings</button>
         <button onclick="handleLogout()" style="background:#780000; color:white; border:none;">Logout</button>
       </div>
     </div>
   </header>
 
   <div class="content">
-    <h1 id="welcomeText">The Secret Kiwi Vault</h1>
-    <img id="kiwiImage" src="kiwi.jpg" alt="kiwi" width="300" />
+    <h1>The Secret Kiwi Vault</h1>
+    <img id="kiwiImage" src="kiwi.jpg" width="300" />
   </div>
 
   <div id="authModal" class="modal-overlay">
@@ -92,8 +84,33 @@
       <input type="text" id="regName" placeholder="Unique Username">
       <input type="email" id="authEmail" placeholder="Email">
       <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Submit</button>
+      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none;">Submit</button>
       <button onclick="closeModal('authModal')" style="background:none; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <div id="friendsModal" class="modal-overlay">
+    <div class="modal-content" style="width: 380px;">
+      <h2>Social Hub</h2>
+      <div style="display:flex; gap:5px;">
+        <input type="text" id="friendSearch" placeholder="Friend's Username" style="flex:1">
+        <button onclick="sendFriendRequest()" style="background:#28a745; border:none; margin:10px 0">Add</button>
+      </div>
+      
+      <div id="requestSection"></div>
+      
+      <h4>My Friends (Click to Chat)</h4>
+      <div id="friendsList" style="margin-bottom:10px;"></div>
+
+      <div id="chatSection" style="display:none; border-top: 1px solid var(--border-color); padding-top:10px;">
+        <h4 id="chattingWith">Chat</h4>
+        <div id="chatBox"></div>
+        <div style="display:flex; gap:5px;">
+          <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
+          <button onclick="sendMessage()" style="background:#4cc9f0; color:black; border:none; margin:10px 0">Send</button>
+        </div>
+      </div>
+      <button onclick="closeModal('friendsModal')" style="background:none; border:none; color:#888;">Close</button>
     </div>
   </div>
 
@@ -102,7 +119,7 @@
       <h2>Settings</h2>
       <input type="text" id="setDisplayName" placeholder="Change Username">
       <input type="text" id="setPhotoUrl" placeholder="Photo URL">
-      <button onclick="handleUpdateSettings()" style="background:#28a745; color:white; border:none; padding:12px;">Save</button>
+      <button onclick="handleUpdateSettings()" style="background:#28a745; color:white; border:none;">Save</button>
       <button onclick="closeModal('settingsModal')" style="background:none; border:none; color:#888;">Close</button>
     </div>
   </div>
@@ -110,8 +127,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    // Import Firestore
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, deleteDoc, arrayUnion, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -126,87 +142,138 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // --- 1. Unique Name Check Function ---
-    async function isUsernameTaken(name) {
-      const nameRef = doc(db, "usernames", name.toLowerCase().trim());
-      const nameSnap = await getDoc(nameRef);
-      return nameSnap.exists();
+    let activeChatFriendId = null;
+    let chatUnsubscribe = null;
+
+    // --- Core Logic ---
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('loggedInUI').style.display = 'flex';
+        document.getElementById('loggedOutUI').style.display = 'none';
+        document.getElementById('userGreeting').innerText = user.displayName;
+        document.getElementById('headerProfilePic').src = user.photoURL || "https://www.w3schools.com/howto/img_avatar.png";
+        if (user.emailVerified) document.getElementById('kiwiImage').style.display = 'inline-block';
+        initSocialListeners(user);
+      } else {
+        document.getElementById('loggedInUI').style.display = 'none';
+        document.getElementById('loggedOutUI').style.display = 'block';
+        document.getElementById('kiwiImage').style.display = 'none';
+      }
+    });
+
+    function initSocialListeners(user) {
+      // Listen for Requests
+      onSnapshot(query(collection(db, "requests"), where("to", "==", user.uid)), (snap) => {
+        const div = document.getElementById('requestSection');
+        div.innerHTML = snap.empty ? "" : "<h4>Requests</h4>";
+        snap.forEach(d => {
+          const req = d.data();
+          div.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span>${req.fromName}</span>
+            <button onclick="acceptFriend('${d.id}', '${req.from}', '${req.fromName}')">Accept</button>
+          </div>`;
+        });
+      });
+
+      // Listen for Friends
+      onSnapshot(doc(db, "users", user.uid), (d) => {
+        const list = document.getElementById('friendsList');
+        list.innerHTML = "";
+        const friends = d.data()?.friends || [];
+        friends.forEach(f => {
+          const btn = document.createElement('button');
+          btn.innerText = f.name;
+          btn.style.cssText = "width:100%; margin-top:5px; text-align:left;";
+          btn.onclick = () => openChat(f.uid, f.name);
+          list.appendChild(btn);
+        });
+      });
     }
 
-    // --- 2. Theme Toggle Logic ---
+    // --- Actions ---
+    window.sendFriendRequest = async () => {
+      const name = document.getElementById('friendSearch').value.toLowerCase().trim();
+      const snap = await getDoc(doc(db, "usernames", name));
+      if (!snap.exists()) return alert("User not found");
+      await addDoc(collection(db, "requests"), {
+        from: auth.currentUser.uid, fromName: auth.currentUser.displayName,
+        to: snap.data().uid, status: "pending"
+      });
+      alert("Sent!");
+    };
+
+    window.acceptFriend = async (id, fUid, fName) => {
+      const myUid = auth.currentUser.uid;
+      const myName = auth.currentUser.displayName;
+      await setDoc(doc(db, "users", myUid), { friends: arrayUnion({uid: fUid, name: fName}) }, {merge:true});
+      await setDoc(doc(db, "users", fUid), { friends: arrayUnion({uid: myUid, name: myName}) }, {merge:true});
+      await deleteDoc(doc(db, "requests", id));
+    };
+
+    window.openChat = (fUid, fName) => {
+      activeChatFriendId = fUid;
+      document.getElementById('chatSection').style.display = 'block';
+      document.getElementById('chattingWith').innerText = "Chat with " + fName;
+      if (chatUnsubscribe) chatUnsubscribe();
+      
+      const chatId = [auth.currentUser.uid, fUid].sort().join("_");
+      const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
+      
+      chatUnsubscribe = onSnapshot(q, (snap) => {
+        const box = document.getElementById('chatBox');
+        box.innerHTML = "";
+        snap.forEach(m => {
+          const data = m.data();
+          box.innerHTML += `<div class="msg"><span class="msg-name">${data.sender}:</span> ${data.text}</div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+      });
+    };
+
+    window.sendMessage = async () => {
+      const text = document.getElementById('chatInput').value;
+      if (!text || !activeChatFriendId) return;
+      const chatId = [auth.currentUser.uid, activeChatFriendId].sort().join("_");
+      await addDoc(collection(db, "chats", chatId, "messages"), {
+        sender: auth.currentUser.displayName,
+        text: text,
+        time: Date.now()
+      });
+      document.getElementById('chatInput').value = "";
+    };
+
+    // --- Helpers ---
     window.toggleTheme = () => {
       const root = document.documentElement;
       const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', newTheme);
       document.getElementById('themeBtn').innerText = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
     };
-
-    // --- 3. Observer ---
-    onAuthStateChanged(auth, (user) => {
-      const loggedInUI = document.getElementById('loggedInUI');
-      const loggedOutUI = document.getElementById('loggedOutUI');
-      if (user) {
-        loggedInUI.style.display = 'flex';
-        loggedOutUI.style.display = 'none';
-        document.getElementById('userGreeting').innerText = user.displayName;
-        document.getElementById('headerProfilePic').src = user.photoURL || "https://www.w3schools.com/howto/img_avatar.png";
-        if (user.emailVerified) document.getElementById('kiwiImage').style.display = 'inline-block';
-      } else {
-        loggedInUI.style.display = 'none';
-        loggedOutUI.style.display = 'block';
-        document.getElementById('kiwiImage').style.display = 'none';
+    window.openModal = (id, mode) => {
+      if(id === 'authModal') {
+        authMode = mode;
+        document.getElementById('regName').style.display = mode === 'login' ? 'none' : 'block';
       }
-    });
-
-    // --- 4. Auth with Unique Name Logic ---
-    window.handleAuth = async () => {
-      const email = document.getElementById('authEmail').value;
-      const pass = document.getElementById('authPw').value;
-      const name = document.getElementById('regName').value;
-
-      try {
-        if (authMode === 'signup') {
-          // Check if name exists in Firestore
-          const taken = await isUsernameTaken(name);
-          if (taken) return alert("That username is already taken!");
-
-          const res = await createUserWithEmailAndPassword(auth, email, pass);
-          
-          // Claim the name in Firestore
-          await setDoc(doc(db, "usernames", name.toLowerCase().trim()), { uid: res.user.uid });
-          
-          await updateProfile(res.user, { displayName: name });
-          await sendEmailVerification(res.user);
-          alert("Signed up! Check email.");
-        } else {
-          await signInWithEmailAndPassword(auth, email, pass);
-        }
-        closeModal('authModal');
-      } catch (e) { alert(e.message); }
+      document.getElementById(id).style.display = 'flex';
     };
-
-    // --- Boilerplate Window Functions ---
-    let authMode = 'signup';
-    window.openAuthModal = (mode) => {
-      authMode = mode;
-      document.getElementById('regName').style.display = mode === 'login' ? 'none' : 'block';
-      document.getElementById('authModal').style.display = 'flex';
-    };
-    window.openSettingsModal = () => document.getElementById('settingsModal').style.display = 'flex';
     window.closeModal = (id) => document.getElementById(id).style.display = 'none';
     window.handleLogout = () => signOut(auth);
-    window.handleUpdateSettings = async () => {
-        const newName = document.getElementById('setDisplayName').value;
-        const newPhoto = document.getElementById('setPhotoUrl').value;
-        try {
-            if(newName !== auth.currentUser.displayName) {
-                if(await isUsernameTaken(newName)) return alert("Username taken!");
-                await setDoc(doc(db, "usernames", newName.toLowerCase().trim()), { uid: auth.currentUser.uid });
-            }
-            await updateProfile(auth.currentUser, { displayName: newName, photoURL: newPhoto });
-            alert("Updated!");
-            location.reload();
-        } catch(e) { alert(e.message); }
+    let authMode = 'signup';
+    window.handleAuth = async () => {
+      const e = document.getElementById('authEmail').value;
+      const p = document.getElementById('authPw').value;
+      const n = document.getElementById('regName').value;
+      try {
+        if (authMode === 'signup') {
+          const nameSnap = await getDoc(doc(db, "usernames", n.toLowerCase()));
+          if (nameSnap.exists()) return alert("Taken!");
+          const res = await createUserWithEmailAndPassword(auth, e, p);
+          await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid });
+          await updateProfile(res.user, { displayName: n });
+          await sendEmailVerification(res.user);
+        } else { await signInWithEmailAndPassword(auth, e, p); }
+        closeModal('authModal');
+      } catch (err) { alert(err.message); }
     };
   </script>
 </body>
