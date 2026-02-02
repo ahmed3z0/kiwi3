@@ -19,25 +19,25 @@
     button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
     
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 380px; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
+    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 400px; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
     input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
 
     #chatBox { height: 300px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
-    .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; }
+    .msg { margin-bottom: 12px; font-size: 14px; position: relative; border-bottom: 1px solid #333; padding-bottom: 5px; }
     .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
-    .voice-msg { display: block; margin-top: 5px; height: 35px; width: 100%; }
-    .recording-active { background: #ff4d4d !important; animation: pulse 1s infinite; }
+    
+    .report-btn { font-size: 10px; color: #ff9f1c; background: none; border: none; cursor: pointer; float: right; }
     
     #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
-    .nuke-btn { background: #780000; color: white; padding: 12px; margin-top: 10px; border: none; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    .nuke-btn { background: #780000; color: white; padding: 12px; border: none; width: 100%; margin-top: 10px; }
+    .report-log { background: rgba(255,0,0,0.1); padding: 8px; border-radius: 5px; margin-bottom: 5px; font-size: 12px; border-left: 3px solid red; }
   </style>
 </head>
 <body>
 
   <header>
     <div class="auth-buttons">
-      <button onclick="toggleTheme()" id="themeBtn">Mode</button>
+      <button onclick="toggleTheme()">Mode</button>
       <button id="adminBtn" onclick="openModal('adminModal')">Admin Panel</button>
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
         <span id="userGreeting"></span>
@@ -47,40 +47,36 @@
     </div>
   </header>
 
-  <div class="content" style="text-align:center; padding-top:50px;">
+  <div class="content" style="text-align:center; padding-top:40px;">
     <h1>The Secret Kiwi Vault</h1>
-    <img id="kiwiImage" src="kiwi.jpg" width="250" style="display:none; border-radius:15px;" />
+    <img id="kiwiImage" src="kiwi.jpg" width="200" style="display:none; border-radius:15px;" />
   </div>
 
   <div id="adminModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>Admin Panel</h2>
-      <button class="nuke-btn" onclick="clearGlobalChat()">☢ WIPE GLOBAL CHAT</button>
+    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+      <h2>Admin Control</h2>
+      <button class="nuke-btn" onclick="clearGlobalChat()">☢ CLEAR GLOBAL CHAT</button>
+      
+      <h4>User Reports</h4>
+      <div id="reportList">No new reports.</div>
+
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-      <h4>Shadow Ban User</h4>
+      <h4>Shadow Ban</h4>
       <div style="display:flex; gap:5px;">
-        <input type="text" id="banTarget" placeholder="Username" style="flex:1; margin:0;">
-        <button onclick="handleBanUser()" style="background:#ff4d4d; border:none; color:white;">Ban</button>
+        <input type="text" id="banTarget" placeholder="Username" style="flex:1;">
+        <button onclick="handleBanUser()" style="background:#ff4d4d; color:white;">Ban</button>
       </div>
-      <p style="font-size:10px; color:#888;">*Banned users can see their own msgs, but others can't.</p>
       <button onclick="closeModal('adminModal')" style="margin-top:15px;">Close</button>
     </div>
   </div>
 
   <div id="friendsModal" class="modal-overlay">
     <div class="modal-content">
-      <div style="display:flex; justify-content: space-between; align-items:center;">
-        <h2 style="margin:0">Social</h2>
-        <span id="onlineCount" style="color:#44eb44; font-size:12px;">0 Online</span>
-      </div>
-      <button onclick="openChat('global', 'Global Chat')" style="width:100%; margin:10px 0; background:#4cc9f0; color:black;">Open Global Chat</button>
-      <div id="chatSection" style="display:none;">
-        <div id="chatBox"></div>
-        <div style="display:flex; gap:5px; margin-top:5px;">
-          <input type="text" id="chatInput" placeholder="Message..." style="flex:1">
-          <button id="recordBtn" onclick="toggleRecording()">🎤</button>
-          <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
-        </div>
+      <h2>Global Chat</h2>
+      <div id="chatBox"></div>
+      <div style="display:flex; gap:5px; margin-top:10px;">
+        <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
+        <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
       </div>
       <button onclick="closeModal('friendsModal')" style="margin-top:10px;">Close</button>
     </div>
@@ -88,11 +84,11 @@
 
   <div id="authModal" class="modal-overlay">
     <div class="modal-content">
-      <h2 id="authTitle">Vault Access</h2>
+      <h2 id="authTitle">Vault Login</h2>
       <input type="text" id="regName" placeholder="Username">
       <input type="email" id="authEmail" placeholder="Email">
       <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Login / Sign Up</button>
+      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Access Vault</button>
     </div>
   </div>
 
@@ -115,9 +111,6 @@
     const db = getFirestore(app);
 
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
-    let activeChatId = "global_room";
-    let chatUnsubscribe = null;
-    let mediaRecorder, audioChunks = [];
     let isShadowBanned = false;
 
     onAuthStateChanged(auth, async (user) => {
@@ -127,48 +120,70 @@
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
 
-        // Check Ban Status
         const banDoc = await getDoc(doc(db, "banned_users", user.uid));
         if (banDoc.exists()) isShadowBanned = true;
 
-        if(user.uid === OWNER_UID) document.getElementById('adminBtn').style.display = 'block';
-        await setDoc(doc(db, "online_status", user.uid), { active: true });
+        if(user.uid === OWNER_UID) {
+          document.getElementById('adminBtn').style.display = 'block';
+          listenToReports();
+        }
+        initChat();
       } else {
         openModal('authModal');
       }
     });
 
-    onSnapshot(collection(db, "online_status"), (s) => document.getElementById('onlineCount').innerText = s.size + " Online");
-
-    window.openChat = (id, title) => {
-      document.getElementById('chatSection').style.display = 'block';
-      if (chatUnsubscribe) chatUnsubscribe();
-      const q = query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc"));
-      chatUnsubscribe = onSnapshot(q, (snap) => {
+    function initChat() {
+      const q = query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc"));
+      onSnapshot(q, (snap) => {
         const box = document.getElementById('chatBox');
         box.innerHTML = "";
         snap.forEach(m => {
           const d = m.data();
-          // Shadow Ban Logic: Don't show banned messages unless it's the sender themselves or the Admin
           if (d.shadow && d.senderId !== auth.currentUser.uid && auth.currentUser.uid !== OWNER_UID) return;
           
           const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
-          const content = d.type === 'voice' ? `<audio controls src="${d.text}" class="voice-msg"></audio>` : `<span>${d.text}</span>`;
-          box.innerHTML += `<div class="msg"><b>${ownerLabel}${d.sender}</b>: ${content}</div>`;
+          box.innerHTML += `
+            <div class="msg">
+              <button class="report-btn" onclick="reportUser('${m.id}', '${d.sender}', '${d.text}')">🚩 Report</button>
+              <b>${ownerLabel}${d.sender}</b>: ${d.text}
+            </div>`;
         });
         box.scrollTop = box.scrollHeight;
       });
-    };
+    }
 
     window.sendMessage = async () => {
       const val = document.getElementById('chatInput').value;
       if (!val) return;
-      await addDoc(collection(db, "chats", activeChatId, "messages"), {
+      await addDoc(collection(db, "chats", "global_room", "messages"), {
         senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
-        text: val, type: 'text', time: Date.now(), shadow: isShadowBanned
+        text: val, time: Date.now(), shadow: isShadowBanned
       });
       document.getElementById('chatInput').value = "";
     };
+
+    window.reportUser = async (msgId, offenderName, text) => {
+      if(!confirm(`Report ${offenderName} for this message?`)) return;
+      await addDoc(collection(db, "reports"), {
+        reporter: auth.currentUser.displayName,
+        offender: offenderName,
+        message: text,
+        time: Date.now()
+      });
+      alert("Report sent to Admin.");
+    };
+
+    function listenToReports() {
+      onSnapshot(query(collection(db, "reports"), orderBy("time", "desc")), (snap) => {
+        const list = document.getElementById('reportList');
+        list.innerHTML = "";
+        snap.forEach(d => {
+          const r = d.data();
+          list.innerHTML += `<div class="report-log"><b>${r.reporter}</b> reported <b>${r.offender}</b>: "${r.message}"</div>`;
+        });
+      });
+    }
 
     window.handleBanUser = async () => {
       const username = document.getElementById('banTarget').value.toLowerCase().trim();
@@ -176,7 +191,7 @@
       if (userSnap.exists()) {
         await setDoc(doc(db, "banned_users", userSnap.data().uid), { username, banned: true });
         alert(username + " shadow banned.");
-      } else { alert("User not found."); }
+      } else { alert("Not found."); }
     };
 
     window.clearGlobalChat = async () => {
@@ -185,28 +200,6 @@
       const batch = writeBatch(db);
       q.forEach(d => batch.delete(d.ref));
       await batch.commit();
-    };
-
-    window.toggleRecording = async () => {
-      if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-        mediaRecorder.onstop = () => {
-          const reader = new FileReader();
-          reader.readAsDataURL(new Blob(audioChunks));
-          reader.onloadend = () => addDoc(collection(db, "chats", activeChatId, "messages"), {
-            senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
-            text: reader.result, type: 'voice', time: Date.now(), shadow: isShadowBanned
-          });
-          audioChunks = [];
-        };
-        mediaRecorder.start();
-        document.getElementById('recordBtn').classList.add('recording-active');
-      } else {
-        mediaRecorder.stop();
-        document.getElementById('recordBtn').classList.remove('recording-active');
-      }
     };
 
     window.handleAuth = async () => {
