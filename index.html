@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
+  <meta charset="UTF-8">
+  <title>The Secret Kiwi Vault</title>
   <style>
+    /* 1. Theme Variables */
     :root[data-theme="dark"] {
       --bg-color: #121212; --text-color: #ffffff; --header-bg: #0d1b2a;
       --card-bg: #1e1e1e; --input-bg: #2a2a2a; --btn-bg: #1b263b; --border-color: #333;
@@ -32,7 +35,9 @@
       border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color);
       font-weight: 600; transition: 0.3s; 
     }
+    button:hover { opacity: 0.8; }
 
+    /* Modals */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100;
@@ -45,9 +50,14 @@
     
     .content { padding-top: 60px; text-align: center; }
     #kiwiImage { display: none; margin-top: 30px; border-radius: 12px; border: 5px solid var(--header-bg); }
+    
+    .warning-box { 
+      display: none; background: #332b00; color: #ffe066; padding: 20px; 
+      border-radius: 8px; border: 1px solid #665500; margin-top: 20px; max-width: 400px;
+    }
 
     /* Chat Styling */
-    #chatBox { height: 200px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: left; }
+    #chatBox { height: 200px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: left; border: 1px solid var(--border-color); }
     .msg { margin-bottom: 8px; font-size: 14px; }
     .msg-name { font-weight: bold; color: #4cc9f0; }
   </style>
@@ -66,8 +76,8 @@
           <span id="userGreeting"></span>
           <img id="headerProfilePic" class="profile-pic" src="">
         </div>
-        <button onclick="document.getElementById('friendsModal').style.display='flex'">Friends</button>
-        <button onclick="document.getElementById('settingsModal').style.display='flex'">Settings</button>
+        <button onclick="openModal('friendsModal')">Social</button>
+        <button onclick="openModal('settingsModal')">Settings</button>
         <button onclick="handleLogout()" style="background:#780000; color:white; border:none;">Logout</button>
       </div>
     </div>
@@ -75,7 +85,16 @@
 
   <div class="content">
     <h1>The Secret Kiwi Vault</h1>
+    <div id="loggedOutMessage"><p>Login to discover what's hidden.</p></div>
+    
     <img id="kiwiImage" src="kiwi.jpg" width="300" />
+
+    <div id="verifyWarning" class="warning-box">
+      <h3>Verification Required</h3>
+      <p>Please check your inbox. You must verify your email to unlock the Secret Kiwi.</p>
+      <button onclick="handleVerifyCheck()" style="background: #ffe066; color: #332b00; border: none; margin-bottom: 10px;">I've Verified!</button>
+      <button onclick="resendVerification()" style="background: transparent; color: #ffe066; border: 1px solid #ffe066;">Resend Email</button>
+    </div>
   </div>
 
   <div id="authModal" class="modal-overlay">
@@ -84,8 +103,8 @@
       <input type="text" id="regName" placeholder="Unique Username">
       <input type="email" id="authEmail" placeholder="Email">
       <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none;">Submit</button>
-      <button onclick="closeModal('authModal')" style="background:none; border:none; color:#888;">Cancel</button>
+      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px; margin-top:10px;">Submit</button>
+      <button onclick="closeModal('authModal')" style="background:none; border:none; color:#888; margin-top:10px;">Cancel</button>
     </div>
   </div>
 
@@ -94,7 +113,7 @@
       <h2>Social Hub</h2>
       <div style="display:flex; gap:5px;">
         <input type="text" id="friendSearch" placeholder="Friend's Username" style="flex:1">
-        <button onclick="sendFriendRequest()" style="background:#28a745; border:none; margin:10px 0">Add</button>
+        <button onclick="sendFriendRequest()" style="background:#28a745; border:none;">Add</button>
       </div>
       
       <div id="requestSection"></div>
@@ -107,20 +126,22 @@
         <div id="chatBox"></div>
         <div style="display:flex; gap:5px;">
           <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
-          <button onclick="sendMessage()" style="background:#4cc9f0; color:black; border:none; margin:10px 0">Send</button>
+          <button onclick="sendMessage()" style="background:#4cc9f0; color:black; border:none;">Send</button>
         </div>
       </div>
-      <button onclick="closeModal('friendsModal')" style="background:none; border:none; color:#888;">Close</button>
+      <button onclick="closeModal('friendsModal')" style="background:none; border:none; color:#888; margin-top:10px;">Close</button>
     </div>
   </div>
 
   <div id="settingsModal" class="modal-overlay">
     <div class="modal-content">
       <h2>Settings</h2>
+      <label style="font-size:12px; color:gray">Display Name</label>
       <input type="text" id="setDisplayName" placeholder="Change Username">
+      <label style="font-size:12px; color:gray">Photo URL</label>
       <input type="text" id="setPhotoUrl" placeholder="Photo URL">
-      <button onclick="handleUpdateSettings()" style="background:#28a745; color:white; border:none;">Save</button>
-      <button onclick="closeModal('settingsModal')" style="background:none; border:none; color:#888;">Close</button>
+      <button onclick="handleUpdateSettings()" style="background:#28a745; color:white; border:none; padding:12px; margin-top:10px;">Save Changes</button>
+      <button onclick="closeModal('settingsModal')" style="background:none; border:none; color:#888; margin-top:10px;">Close</button>
     </div>
   </div>
 
@@ -144,45 +165,81 @@
 
     let activeChatFriendId = null;
     let chatUnsubscribe = null;
+    let authMode = 'signup';
 
-    // --- Core Logic ---
+    // --- Observer ---
     onAuthStateChanged(auth, (user) => {
+      const loggedInUI = document.getElementById('loggedInUI');
+      const loggedOutUI = document.getElementById('loggedOutUI');
+      const kiwi = document.getElementById('kiwiImage');
+      const warning = document.getElementById('verifyWarning');
+      const welcome = document.getElementById('loggedOutMessage');
+
       if (user) {
-        document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('loggedOutUI').style.display = 'none';
-        document.getElementById('userGreeting').innerText = user.displayName;
+        loggedInUI.style.display = 'flex';
+        loggedOutUI.style.display = 'none';
+        welcome.style.display = 'none';
+        document.getElementById('userGreeting').innerText = user.displayName || user.email.split('@')[0];
         document.getElementById('headerProfilePic').src = user.photoURL || "https://www.w3schools.com/howto/img_avatar.png";
-        if (user.emailVerified) document.getElementById('kiwiImage').style.display = 'inline-block';
+
+        // Verification Logic
+        if (user.emailVerified) {
+          kiwi.style.display = 'inline-block';
+          warning.style.display = 'none';
+        } else {
+          kiwi.style.display = 'none';
+          warning.style.display = 'block';
+        }
         initSocialListeners(user);
       } else {
-        document.getElementById('loggedInUI').style.display = 'none';
-        document.getElementById('loggedOutUI').style.display = 'block';
-        document.getElementById('kiwiImage').style.display = 'none';
+        loggedInUI.style.display = 'none';
+        loggedOutUI.style.display = 'block';
+        welcome.style.display = 'block';
+        kiwi.style.display = 'none';
+        warning.style.display = 'none';
       }
     });
 
+    // --- Verification Functions ---
+    window.handleVerifyCheck = async () => {
+      try {
+        await auth.currentUser.reload();
+        if (auth.currentUser.emailVerified) {
+          alert("Success! You are now verified.");
+          location.reload();
+        } else {
+          alert("Not verified yet. Please click the link in your email!");
+        }
+      } catch (e) { alert(e.message); }
+    };
+
+    window.resendVerification = async () => {
+      try {
+        await sendEmailVerification(auth.currentUser);
+        alert("Verification email resent!");
+      } catch (e) { alert(e.message); }
+    };
+
+    // --- Social & Chat Logic ---
     function initSocialListeners(user) {
-      // Listen for Requests
       onSnapshot(query(collection(db, "requests"), where("to", "==", user.uid)), (snap) => {
         const div = document.getElementById('requestSection');
         div.innerHTML = snap.empty ? "" : "<h4>Requests</h4>";
         snap.forEach(d => {
           const req = d.data();
-          div.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+          div.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; background:var(--btn-bg); padding:5px; border-radius:4px;">
             <span>${req.fromName}</span>
-            <button onclick="acceptFriend('${d.id}', '${req.from}', '${req.fromName}')">Accept</button>
+            <button onclick="acceptFriend('${d.id}', '${req.from}', '${req.fromName}')" style="padding:2px 5px;">✔</button>
           </div>`;
         });
       });
 
-      // Listen for Friends
       onSnapshot(doc(db, "users", user.uid), (d) => {
         const list = document.getElementById('friendsList');
-        list.innerHTML = "";
-        const friends = d.data()?.friends || [];
-        friends.forEach(f => {
+        list.innerHTML = d.data()?.friends?.length ? "" : "<p style='font-size:12px; color:gray'>No friends yet.</p>";
+        d.data()?.friends?.forEach(f => {
           const btn = document.createElement('button');
-          btn.innerText = f.name;
+          btn.innerText = "💬 " + f.name;
           btn.style.cssText = "width:100%; margin-top:5px; text-align:left;";
           btn.onclick = () => openChat(f.uid, f.name);
           list.appendChild(btn);
@@ -190,23 +247,23 @@
       });
     }
 
-    // --- Actions ---
     window.sendFriendRequest = async () => {
       const name = document.getElementById('friendSearch').value.toLowerCase().trim();
+      if (!name) return;
       const snap = await getDoc(doc(db, "usernames", name));
       if (!snap.exists()) return alert("User not found");
       await addDoc(collection(db, "requests"), {
         from: auth.currentUser.uid, fromName: auth.currentUser.displayName,
         to: snap.data().uid, status: "pending"
       });
-      alert("Sent!");
+      alert("Request Sent!");
+      document.getElementById('friendSearch').value = "";
     };
 
     window.acceptFriend = async (id, fUid, fName) => {
-      const myUid = auth.currentUser.uid;
-      const myName = auth.currentUser.displayName;
-      await setDoc(doc(db, "users", myUid), { friends: arrayUnion({uid: fUid, name: fName}) }, {merge:true});
-      await setDoc(doc(db, "users", fUid), { friends: arrayUnion({uid: myUid, name: myName}) }, {merge:true});
+      const u = auth.currentUser;
+      await setDoc(doc(db, "users", u.uid), { friends: arrayUnion({uid: fUid, name: fName}) }, {merge:true});
+      await setDoc(doc(db, "users", fUid), { friends: arrayUnion({uid: u.uid, name: u.displayName}) }, {merge:true});
       await deleteDoc(doc(db, "requests", id));
     };
 
@@ -215,10 +272,8 @@
       document.getElementById('chatSection').style.display = 'block';
       document.getElementById('chattingWith').innerText = "Chat with " + fName;
       if (chatUnsubscribe) chatUnsubscribe();
-      
       const chatId = [auth.currentUser.uid, fUid].sort().join("_");
       const q = query(collection(db, "chats", chatId, "messages"), orderBy("time", "asc"));
-      
       chatUnsubscribe = onSnapshot(q, (snap) => {
         const box = document.getElementById('chatBox');
         box.innerHTML = "";
@@ -231,34 +286,40 @@
     };
 
     window.sendMessage = async () => {
-      const text = document.getElementById('chatInput').value;
-      if (!text || !activeChatFriendId) return;
+      const input = document.getElementById('chatInput');
+      if (!input.value || !activeChatFriendId) return;
       const chatId = [auth.currentUser.uid, activeChatFriendId].sort().join("_");
       await addDoc(collection(db, "chats", chatId, "messages"), {
-        sender: auth.currentUser.displayName,
-        text: text,
-        time: Date.now()
+        sender: auth.currentUser.displayName, text: input.value, time: Date.now()
       });
-      document.getElementById('chatInput').value = "";
+      input.value = "";
     };
 
-    // --- Helpers ---
+    // --- UI Helpers ---
     window.toggleTheme = () => {
       const root = document.documentElement;
-      const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', newTheme);
-      document.getElementById('themeBtn').innerText = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+      const theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', theme);
+      document.getElementById('themeBtn').innerText = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
     };
+
     window.openModal = (id, mode) => {
       if(id === 'authModal') {
         authMode = mode;
+        document.getElementById('authTitle').innerText = mode === 'login' ? 'Welcome Back' : 'Create Account';
         document.getElementById('regName').style.display = mode === 'login' ? 'none' : 'block';
       }
       document.getElementById(id).style.display = 'flex';
     };
-    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-    window.handleLogout = () => signOut(auth);
-    let authMode = 'signup';
+
+    window.closeModal = (id) => {
+      document.getElementById(id).style.display = 'none';
+      if(id === 'friendsModal') {
+        if(chatUnsubscribe) chatUnsubscribe();
+        document.getElementById('chatSection').style.display = 'none';
+      }
+    };
+
     window.handleAuth = async () => {
       const e = document.getElementById('authEmail').value;
       const p = document.getElementById('authPw').value;
@@ -266,15 +327,33 @@
       try {
         if (authMode === 'signup') {
           const nameSnap = await getDoc(doc(db, "usernames", n.toLowerCase()));
-          if (nameSnap.exists()) return alert("Taken!");
+          if (nameSnap.exists()) return alert("Username taken!");
           const res = await createUserWithEmailAndPassword(auth, e, p);
           await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid });
           await updateProfile(res.user, { displayName: n });
           await sendEmailVerification(res.user);
+          alert("Account created! Check your email to verify.");
         } else { await signInWithEmailAndPassword(auth, e, p); }
         closeModal('authModal');
       } catch (err) { alert(err.message); }
     };
+
+    window.handleUpdateSettings = async () => {
+      const newN = document.getElementById('setDisplayName').value;
+      const newP = document.getElementById('setPhotoUrl').value;
+      try {
+        if(newN && newN !== auth.currentUser.displayName) {
+          const snap = await getDoc(doc(db, "usernames", newN.toLowerCase()));
+          if(snap.exists()) return alert("Name taken!");
+          await setDoc(doc(db, "usernames", newN.toLowerCase()), { uid: auth.currentUser.uid });
+        }
+        await updateProfile(auth.currentUser, { displayName: newN || auth.currentUser.displayName, photoURL: newP || auth.currentUser.photoURL });
+        alert("Settings Saved!");
+        location.reload();
+      } catch(e) { alert(e.message); }
+    };
+
+    window.handleLogout = () => signOut(auth);
   </script>
 </body>
 </html>
