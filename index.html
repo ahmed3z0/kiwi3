@@ -23,7 +23,8 @@
     input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
 
     #chatBox { height: 300px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
-    .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; }
+    .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+    .pfp-small { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #444; }
     .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
     .voice-msg { display: block; margin-top: 5px; height: 35px; width: 100%; }
     .recording-active { background: #ff4d4d !important; animation: pulse 1s infinite; }
@@ -40,7 +41,9 @@
       <button onclick="toggleTheme()" id="themeBtn">Mode</button>
       <button id="adminBtn" onclick="openModal('adminModal')">Admin Panel</button>
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
+        <img id="navPfp" src="" class="pfp-small" style="display:none;">
         <span id="userGreeting"></span>
+        <button onclick="openModal('settingsModal')">Settings</button>
         <button onclick="openModal('friendsModal')">Social</button>
         <button onclick="handleLogout()" style="background:#780000; color:white;">Logout</button>
       </div>
@@ -50,6 +53,18 @@
   <div class="content" style="text-align:center; padding-top:50px;">
     <h1>The Secret Kiwi Vault</h1>
     <img id="kiwiImage" src="kiwi.jpg" width="250" style="display:none; border-radius:15px;" />
+  </div>
+
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Profile Settings</h2>
+      <label>Display Name</label>
+      <input type="text" id="setDisplayName" placeholder="New Name">
+      <label>Profile Picture URL</label>
+      <input type="text" id="setPfpUrl" placeholder="https://image-link.com/photo.jpg">
+      <button onclick="updateUserProfile()" style="background:#4cc9f0; color:black; margin-top:10px;">Save Changes</button>
+      <button onclick="closeModal('settingsModal')" style="margin-top:10px; background:transparent;">Cancel</button>
+    </div>
   </div>
 
   <div id="adminModal" class="modal-overlay">
@@ -124,10 +139,18 @@
       if (user) {
         document.getElementById('loggedInUI').style.display = 'flex';
         document.getElementById('userGreeting').innerText = user.displayName;
+        
+        // Handle nav pfp
+        const navPfp = document.getElementById('navPfp');
+        if(user.photoURL) { navPfp.src = user.photoURL; navPfp.style.display = 'block'; }
+        
+        // Fill settings fields
+        document.getElementById('setDisplayName').value = user.displayName || "";
+        document.getElementById('setPfpUrl').value = user.photoURL || "";
+
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
 
-        // Check Ban Status
         const banDoc = await getDoc(doc(db, "banned_users", user.uid));
         if (banDoc.exists()) isShadowBanned = true;
 
@@ -137,6 +160,16 @@
         openModal('authModal');
       }
     });
+
+    window.updateUserProfile = async () => {
+        const newName = document.getElementById('setDisplayName').value;
+        const newPfp = document.getElementById('setPfpUrl').value;
+        try {
+            await updateProfile(auth.currentUser, { displayName: newName, photoURL: newPfp });
+            alert("Profile updated!");
+            location.reload();
+        } catch (err) { alert("Error: " + err.message); }
+    };
 
     onSnapshot(collection(db, "online_status"), (s) => document.getElementById('onlineCount').innerText = s.size + " Online");
 
@@ -149,12 +182,19 @@
         box.innerHTML = "";
         snap.forEach(m => {
           const d = m.data();
-          // Shadow Ban Logic: Don't show banned messages unless it's the sender themselves or the Admin
           if (d.shadow && d.senderId !== auth.currentUser.uid && auth.currentUser.uid !== OWNER_UID) return;
           
           const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
+          const pfpImg = d.photoURL ? `<img src="${d.photoURL}" class="pfp-small">` : `<div class="pfp-small" style="background:#555"></div>`;
           const content = d.type === 'voice' ? `<audio controls src="${d.text}" class="voice-msg"></audio>` : `<span>${d.text}</span>`;
-          box.innerHTML += `<div class="msg"><b>${ownerLabel}${d.sender}</b>: ${content}</div>`;
+          
+          box.innerHTML += `
+            <div class="msg">
+                ${pfpImg}
+                <div>
+                    <b>${ownerLabel}${d.sender}</b>: ${content}
+                </div>
+            </div>`;
         });
         box.scrollTop = box.scrollHeight;
       });
@@ -164,8 +204,13 @@
       const val = document.getElementById('chatInput').value;
       if (!val) return;
       await addDoc(collection(db, "chats", activeChatId, "messages"), {
-        senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
-        text: val, type: 'text', time: Date.now(), shadow: isShadowBanned
+        senderId: auth.currentUser.uid, 
+        sender: auth.currentUser.displayName, 
+        photoURL: auth.currentUser.photoURL || "",
+        text: val, 
+        type: 'text', 
+        time: Date.now(), 
+        shadow: isShadowBanned
       });
       document.getElementById('chatInput').value = "";
     };
@@ -196,8 +241,13 @@
           const reader = new FileReader();
           reader.readAsDataURL(new Blob(audioChunks));
           reader.onloadend = () => addDoc(collection(db, "chats", activeChatId, "messages"), {
-            senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
-            text: reader.result, type: 'voice', time: Date.now(), shadow: isShadowBanned
+            senderId: auth.currentUser.uid, 
+            sender: auth.currentUser.displayName, 
+            photoURL: auth.currentUser.photoURL || "",
+            text: reader.result, 
+            type: 'voice', 
+            time: Date.now(), 
+            shadow: isShadowBanned
           });
           audioChunks = [];
         };
