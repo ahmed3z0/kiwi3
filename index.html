@@ -34,10 +34,8 @@
     .nuke-btn { background: #780000; color: white; padding: 12px; border: none; width: 100%; margin-top: 10px; }
     .report-log { background: rgba(255,0,0,0.1); padding: 8px; border-radius: 5px; margin-bottom: 5px; font-size: 12px; border-left: 3px solid red; }
 
-    /* NEW STYLES */
     .announcement-banner { background: #ff9f1c; color: #000; padding: 10px; font-weight: bold; text-align: center; border-radius: 6px; margin-bottom: 10px; display: none; font-size: 13px; }
     .user-item { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
-    .user-info { font-size: 12px; }
     .admin-scroll { max-height: 200px; overflow-y: auto; margin-top: 10px; padding-right: 5px; }
   </style>
 </head>
@@ -63,7 +61,6 @@
   <div id="adminModal" class="modal-overlay">
     <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
       <h2>Admin Control Center</h2>
-      
       <h4>📢 Broadcast Announcement</h4>
       <div style="display:flex; gap:5px;">
         <input type="text" id="announceInput" placeholder="System message..." style="flex:1;">
@@ -72,13 +69,11 @@
       <button onclick="clearAnnouncement()" style="font-size:10px; background:none; border:none; color:#888; margin-top:5px; cursor:pointer;">Clear Announcement</button>
 
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-
-      <h4>👥 User Lookup & Manage</h4>
+      <h4>👥 User Directory</h4>
       <div id="userDirectory" class="admin-scroll">Loading directory...</div>
 
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-      
-      <h4>User Reports</h4>
+      <h4>🚩 User Reports</h4>
       <div id="reportList" class="admin-scroll">No new reports.</div>
 
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
@@ -88,7 +83,7 @@
   </div>
 
   <div id="friendsModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="width: 500px;">
       <div id="systemAnnouncement" class="announcement-banner"></div>
       <h2>Global Chat</h2>
       <div id="chatBox"></div>
@@ -139,7 +134,6 @@
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
 
-        // Check Ban/Mute Status
         const banDoc = await getDoc(doc(db, "banned_users", user.uid));
         if (banDoc.exists()) {
             isShadowBanned = banDoc.data().banned || false;
@@ -166,20 +160,15 @@
         snap.forEach(m => {
           const d = m.data();
           const mid = m.id;
-          const isOwner = auth.currentUser.uid === OWNER_UID;
-          const isMe = d.senderId === auth.currentUser.uid;
+          const isOwner = auth.currentUser?.uid === OWNER_UID;
+          const isMe = d.senderId === auth.currentUser?.uid;
 
           if (d.shadow && !isMe && !isOwner) return;
           
           const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
-          
           let buttons = "";
-          if (isMe || isOwner) {
-            buttons += `<button class="msg-btn del-btn" onclick="deleteMessage('${mid}')">🗑️</button>`;
-          }
-          if (!isMe) {
-            buttons += `<button class="msg-btn report-btn" onclick="reportUser('${mid}', '${d.sender}', '${d.text}')">🚩</button>`;
-          }
+          if (isMe || isOwner) { buttons += `<button class="msg-btn del-btn" onclick="deleteMessage('${mid}')">🗑️</button>`; }
+          if (!isMe) { buttons += `<button class="msg-btn report-btn" onclick="reportUser('${mid}', '${d.sender}', '${d.text}')">🚩</button>`; }
 
           box.innerHTML += `
             <div class="msg">
@@ -193,14 +182,12 @@
 
     window.sendMessage = async () => {
       const val = document.getElementById('chatInput').value;
-      if (!val) return;
-      
+      if (!val || !auth.currentUser) return;
       if (Date.now() < muteUntil) {
           const minsLeft = Math.ceil((muteUntil - Date.now()) / 60000);
           alert(`You are muted for ${minsLeft} more minutes.`);
           return;
       }
-
       await addDoc(collection(db, "chats", "global_room", "messages"), {
         senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
         text: val, time: Date.now(), shadow: isShadowBanned
@@ -208,7 +195,6 @@
       document.getElementById('chatInput').value = "";
     };
 
-    // ANNOUNCEMENTS
     window.sendAnnouncement = async () => {
       const text = document.getElementById('announceInput').value;
       if (!text) return;
@@ -226,13 +212,10 @@
         if (d.exists() && d.data().active) {
           banner.innerText = "📢 " + d.data().text;
           banner.style.display = 'block';
-        } else {
-          banner.style.display = 'none';
-        }
+        } else { banner.style.display = 'none'; }
       });
     }
 
-    // USER DIRECTORY
     async function loadUserDirectory() {
       const snap = await getDocs(collection(db, "usernames"));
       const dir = document.getElementById('userDirectory');
@@ -242,10 +225,10 @@
         const name = u.id;
         dir.innerHTML += `
           <div class="user-item">
-            <span class="user-info"><b>${name}</b></span>
+            <span><b>${name}</b></span>
             <div>
-              <button onclick="manageUser('${data.uid}', '${name}', 'mute')" style="font-size:9px; background:#ff9f1c; color:black; border:none; padding:3px;">Mute 1h</button>
-              <button onclick="manageUser('${data.uid}', '${name}', 'ban')" style="font-size:9px; background:#ff4d4d; color:white; border:none; padding:3px;">Ban</button>
+              <button onclick="manageUser('${data.uid}', '${name}', 'mute')" style="font-size:9px; background:#ff9f1c; color:black; border:none; padding:3px; cursor:pointer;">Mute 1h</button>
+              <button onclick="manageUser('${data.uid}', '${name}', 'ban')" style="font-size:9px; background:#ff4d4d; color:white; border:none; padding:3px; cursor:pointer;">Ban</button>
             </div>
           </div>`;
       });
@@ -257,27 +240,22 @@
         await setDoc(doc(db, "banned_users", uid), { username: name, banned: true }, { merge: true });
         alert(name + " shadow banned.");
       } else if (type === 'mute') {
-        const until = Date.now() + (60 * 60 * 1000); // 1 Hour
+        const until = Date.now() + (60 * 60 * 1000);
         await setDoc(doc(db, "banned_users", uid), { username: name, muteUntil: until }, { merge: true });
         alert(name + " muted for 1 hour.");
       }
     };
 
     window.deleteMessage = async (id) => {
-      if(confirm("Delete this message?")) {
-        await deleteDoc(doc(db, "chats", "global_room", "messages", id));
-      }
+      if(confirm("Delete this message?")) { await deleteDoc(doc(db, "chats", "global_room", "messages", id)); }
     };
 
     window.reportUser = async (msgId, offenderName, text) => {
-      if(!confirm(`Report ${offenderName} for this message?`)) return;
+      if(!confirm(`Report ${offenderName}?`)) return;
       await addDoc(collection(db, "reports"), {
-        reporter: auth.currentUser.displayName,
-        offender: offenderName,
-        message: text,
-        time: Date.now()
+        reporter: auth.currentUser.displayName, offender: offenderName, message: text, time: Date.now()
       });
-      alert("Report sent to Admin.");
+      alert("Report sent.");
     };
 
     function listenToReports() {
