@@ -167,7 +167,7 @@
             <!-- Moderation -->
             <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
                 <h3>🛡️ Moderation</h3>
-                <input type="text" id="muteUserInput" placeholder="User UID to mute..." style="width:100%; margin-bottom:5px;">
+                <input type="text" id="muteUserInput" placeholder="Username to mute..." style="width:100%; margin-bottom:5px;">
                 <input type="number" id="muteDuration" placeholder="Minutes (0 = permanent)" style="width:100%; margin-bottom:10px;">
                 <button onclick="muteUser()" style="background:#ff6b35; color:white; width:100%; margin-bottom:10px;">Mute User</button>
                 <button onclick="clearChatRoom()" style="background:#780000; color:white; width:100%;">Clear Global Chat</button>
@@ -195,7 +195,7 @@
             <h3>🎭 Account Impersonation</h3>
             <p style="font-size:12px; color:#888; margin-bottom:10px;">Sign in as any user temporarily. Your admin account will be restored when you return.</p>
             <div style="display:grid; grid-template-columns: 1fr auto auto; gap:10px;">
-                <input type="text" id="impersonateTarget" placeholder="Enter user's UID...">
+                <input type="text" id="impersonateTarget" placeholder="Enter username...">
                 <button onclick="impersonateUser()" style="background:#ff6b35; color:white;">Sign In As User</button>
                 <button id="returnToAdminBtn" onclick="returnToAdmin()" style="background:#4cc9f0; color:black; display:none;">Return to Admin</button>
             </div>
@@ -408,13 +408,17 @@
 
     // MODERATION
     window.muteUser = async () => {
-      const uid = document.getElementById('muteUserInput').value.trim();
+      const username = document.getElementById('muteUserInput').value.trim();
       const duration = parseInt(document.getElementById('muteDuration').value) || 0;
-      if (!uid) return alert('Enter a user UID');
+      if (!username) return alert('Enter a username');
+      
+      // Find user by username
+      const user = allUsers.find(u => u.displayName && u.displayName.toLowerCase() === username.toLowerCase());
+      if (!user) return alert('User not found');
       
       const until = duration === 0 ? 'permanent' : Date.now() + (duration * 60000);
-      await setDoc(doc(db, "mutedUsers", uid), { until, mutedAt: Date.now() });
-      await addDoc(collection(db, "logs"), { text: `User ${uid} muted until ${until}`, time: Date.now() });
+      await setDoc(doc(db, "mutedUsers", user.uid), { until, mutedAt: Date.now(), username: user.displayName });
+      await addDoc(collection(db, "logs"), { text: `User ${user.displayName} (${user.uid}) muted until ${until}`, time: Date.now() });
       alert('User muted');
       document.getElementById('muteUserInput').value = '';
     };
@@ -423,16 +427,24 @@
       onSnapshot(collection(db, "mutedUsers"), (snap) => {
         const box = document.getElementById('mutedListBox');
         box.innerHTML = '';
-        snap.forEach(doc => {
-          const data = doc.data();
+        snap.forEach(async (docSnap) => {
+          const data = docSnap.data();
           const until = data.until === 'permanent' ? 'Permanent' : new Date(data.until).toLocaleString();
-          box.innerHTML += `<div>${doc.id} - Until: ${until} <button onclick="unmute('${doc.id}')" style="font-size:10px; padding:2px 6px;">Unmute</button></div>`;
+          
+          // Get username from stored data or look it up
+          let displayName = data.username || 'Unknown';
+          if (!data.username) {
+            const userDoc = await getDoc(doc(db, "users", docSnap.id));
+            if (userDoc.exists()) displayName = userDoc.data().displayName || 'Unknown';
+          }
+          
+          box.innerHTML += `<div>${displayName} - Until: ${until} <button onclick="unmuteByUid('${docSnap.id}')" style="font-size:10px; padding:2px 6px;">Unmute</button></div>`;
         });
       });
     }
 
-    window.unmute = async (uid) => {
-      await setDoc(doc(db, "mutedUsers", uid), {}, { merge: true });
+    window.unmuteByUid = async (uid) => {
+      await deleteDoc(doc(db, "mutedUsers", uid));
       await addDoc(collection(db, "logs"), { text: `User ${uid} unmuted`, time: Date.now() });
     };
 
@@ -538,24 +550,25 @@
 
     // IMPERSONATION FUNCTIONS
     window.impersonateUser = async () => {
-      const targetUid = document.getElementById('impersonateTarget').value.trim();
+      const username = document.getElementById('impersonateTarget').value.trim();
       const statusDiv = document.getElementById('impersonateStatus');
       
-      if (!targetUid) {
-        statusDiv.innerHTML = '<span style="color:#ff6b35;">⚠️ Please enter a user UID</span>';
+      if (!username) {
+        statusDiv.innerHTML = '<span style="color:#ff6b35;">⚠️ Please enter a username</span>';
         return;
       }
 
       try {
-        // Get target user's data
-        const userDoc = await getDoc(doc(db, "users", targetUid));
+        // Find user by username
+        const user = allUsers.find(u => u.displayName && u.displayName.toLowerCase() === username.toLowerCase());
         
-        if (!userDoc.exists()) {
+        if (!user) {
           statusDiv.innerHTML = '<span style="color:#ff6b35;">⚠️ User not found</span>';
           return;
         }
 
-        const userData = userDoc.data();
+        const targetUid = user.uid;
+        const userData = user;
         
         // Save current admin data
         originalAdminData = {
