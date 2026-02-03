@@ -26,7 +26,9 @@
     .msg { margin-bottom: 12px; font-size: 14px; position: relative; border-bottom: 1px solid #333; padding-bottom: 5px; }
     .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
     
-    .report-btn { font-size: 10px; color: #ff9f1c; background: none; border: none; cursor: pointer; float: right; }
+    .msg-btn { font-size: 10px; background: none; border: 1px solid; padding: 2px 6px; border-radius: 4px; cursor: pointer; float: right; margin-left: 5px; }
+    .report-btn { color: #ff9f1c; border-color: #ff9f1c; }
+    .del-btn { color: #ff4d4d; border-color: #ff4d4d; }
     
     #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
     .nuke-btn { background: #780000; color: white; padding: 12px; border: none; width: 100%; margin-top: 10px; }
@@ -95,7 +97,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -140,12 +142,26 @@
         box.innerHTML = "";
         snap.forEach(m => {
           const d = m.data();
-          if (d.shadow && d.senderId !== auth.currentUser.uid && auth.currentUser.uid !== OWNER_UID) return;
+          const mid = m.id;
+          const isOwner = auth.currentUser.uid === OWNER_UID;
+          const isMe = d.senderId === auth.currentUser.uid;
+
+          if (d.shadow && !isMe && !isOwner) return;
           
           const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
+          
+          // Show Delete if it's mine OR if I am the Admin. Show Report only if it's NOT mine.
+          let buttons = "";
+          if (isMe || isOwner) {
+            buttons += `<button class="msg-btn del-btn" onclick="deleteMessage('${mid}')">🗑️</button>`;
+          }
+          if (!isMe) {
+            buttons += `<button class="msg-btn report-btn" onclick="reportUser('${mid}', '${d.sender}', '${d.text}')">🚩</button>`;
+          }
+
           box.innerHTML += `
             <div class="msg">
-              <button class="report-btn" onclick="reportUser('${m.id}', '${d.sender}', '${d.text}')">🚩 Report</button>
+              ${buttons}
               <b>${ownerLabel}${d.sender}</b>: ${d.text}
             </div>`;
         });
@@ -161,6 +177,12 @@
         text: val, time: Date.now(), shadow: isShadowBanned
       });
       document.getElementById('chatInput').value = "";
+    };
+
+    window.deleteMessage = async (id) => {
+      if(confirm("Delete this message?")) {
+        await deleteDoc(doc(db, "chats", "global_room", "messages", id));
+      }
     };
 
     window.reportUser = async (msgId, offenderName, text) => {
