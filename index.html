@@ -159,6 +159,7 @@
 
   <div id="authModal" class="modal-overlay"><div class="modal-content"><h2 id="authTitle">Vault Access</h2><input type="text" id="regName" placeholder="Username"><input type="email" id="authEmail" placeholder="Email"><input type="password" id="authPw" placeholder="Password"><button onclick="handleAuth()">Access</button><span onclick="toggleAuthMode()" style="cursor:pointer; color:#4cc9f0; text-align:center; display:block; margin-top:10px;">Login/Sign-up</span></div></div>
   <div id="settingsModal" class="modal-overlay"><div class="modal-content"><h2>Profile</h2><input type="text" id="setDisplayName" placeholder="Name"><input type="text" id="setPfpUrl" placeholder="PFP URL"><button onclick="updateUserProfile()">Save</button><button onclick="closeModal('settingsModal')">Close</button></div></div>
+  <div id="securityLogsModal" class="modal-overlay"><div class="modal-content" style="width:600px;"><h2>🛡️ Security Logs</h2><div id="securityLogsContent" style="max-height:500px; overflow-y:auto; background:#000; padding:15px; border-radius:6px;"></div><button onclick="closeModal('securityLogsModal')">Close</button></div></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -345,17 +346,22 @@
     window.viewSecurityLogs = async () => {
       if(auth.currentUser.uid !== OWNER_UID) return;
       const logs = await getDocs(query(collection(db, "security_logs"), orderBy("time", "desc"), limit(50)));
-      let html = "<div style='background:#000; padding:15px; border-radius:6px; max-height:400px; overflow-y:auto;'>";
-      logs.forEach(d => {
-        const log = d.data();
-        html += `<div style='margin:5px 0; padding:8px; background:#1a0000; border-radius:4px;'>
-          <div style='color:#ff9f1c;'>${new Date(log.time).toLocaleString()}</div>
-          <div>${log.type}: ${log.username}</div>
-        </div>`;
-      });
-      html += "</div>";
-      alert("Check console for security logs");
-      console.log(html);
+      let html = "";
+      if(logs.empty) {
+        html = "<div style='text-align:center; opacity:0.5; padding:20px;'>No security incidents logged</div>";
+      } else {
+        logs.forEach(d => {
+          const log = d.data();
+          html += `<div style='margin:5px 0; padding:8px; background:#1a0000; border-radius:4px; border-left:3px solid #ff4d4d;'>
+            <div style='color:#ff9f1c; font-weight:bold;'>${new Date(log.time).toLocaleString()}</div>
+            <div style='margin-top:5px;'><b>Type:</b> ${log.type}</div>
+            <div><b>User:</b> ${log.username}</div>
+            <div style='font-size:11px; opacity:0.7;'>UID: ${log.userId}</div>
+          </div>`;
+        });
+      }
+      document.getElementById('securityLogsContent').innerHTML = html;
+      openModal('securityLogsModal');
     };
 
     // --- REPORT SYSTEM ---
@@ -446,21 +452,22 @@
               b.innerHTML += `<div class="report-item ${isResolved ? 'report-resolved' : ''}">
                 <div style="display:flex; justify-content:space-between; align-items:start;">
                   <div style="flex:1;">
-                    <div style="color:#ff9f1c; font-weight:bold;">Report from ${r.reportedByName}</div>
-                    <div style="margin:5px 0;">Target: <b>${r.reportedUsername}</b></div>
-                    <div style="font-size:12px; opacity:0.8;">Message: "${r.messageText}"</div>
-                    <div style="font-size:12px; opacity:0.8;">Reason: ${r.reason}</div>
-                    <div style="font-size:11px; opacity:0.6; margin-top:5px;">${new Date(r.time).toLocaleString()}</div>
+                    <div style="color:#ff9f1c; font-weight:bold;">📝 Report from ${r.reportedByName || 'Unknown'}</div>
+                    <div style="margin:5px 0;">🎯 Target: <b>${r.reportedUsername || 'Unknown'}</b></div>
+                    <div style="font-size:12px; opacity:0.8; margin:3px 0;">💬 Message: "${r.messageText || 'N/A'}"</div>
+                    <div style="font-size:12px; opacity:0.8; margin:3px 0;">⚠️ Reason: ${r.reason || 'No reason provided'}</div>
+                    <div style="font-size:11px; opacity:0.6; margin-top:5px;">🕒 ${new Date(r.time).toLocaleString()}</div>
+                    ${isResolved ? `<div style="font-size:11px; color:#10b981; margin-top:3px;">✅ Resolved: ${new Date(r.resolvedAt).toLocaleString()}</div>` : ''}
                   </div>
                   <div style="display:flex; gap:5px; flex-direction:column;">
-                    ${!isResolved ? `<button onclick="resolveReport('${d.id}')" style="font-size:11px; padding:4px 8px;">✓ Resolve</button>` : ''}
-                    <button onclick="deleteReport('${d.id}')" class="danger-btn" style="font-size:11px; padding:4px 8px;">Delete</button>
+                    ${!isResolved ? `<button onclick="resolveReport('${d.id}')" style="font-size:11px; padding:4px 8px; background:#10b981; color:white;">✓ Resolve</button>` : ''}
+                    <button onclick="deleteReport('${d.id}')" class="danger-btn" style="font-size:11px; padding:4px 8px;">🗑 Delete</button>
                   </div>
                 </div>
               </div>`;
               count++;
             });
-            if(count === 0) b.innerHTML = "<div style='text-align:center; opacity:0.5; padding:20px;'>No reports</div>";
+            if(count === 0) b.innerHTML = "<div style='text-align:center; opacity:0.5; padding:20px;'>No reports found</div>";
           });
         }
         setupSocial();
@@ -491,7 +498,7 @@
               <div class="msg-actions">
                 <button onclick="setReplyTo('${m.id}', '${d.sender}')">↩️</button>
                 ${(isOwner || isSender) ? `<button onclick="deleteMessage('${m.id}', true)" class="danger-btn">🗑️</button>` : ''}
-                ${!isSender ? `<button onclick="reportMessage('${m.id}', '${d.senderId}', '${d.sender}', '${d.text.replace(/'/g, "\\'")}')">⚠️</button>` : ''}
+                <button onclick="reportMessage('${m.id}', '${d.senderId}', '${d.sender}', '${d.text.replace(/'/g, "\\'")}')">⚠️</button>
               </div>
             </div>`;
           }
