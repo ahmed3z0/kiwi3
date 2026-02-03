@@ -18,22 +18,16 @@
     .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 12px; }
     
     .pfp-circle { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid #4cc9f0; cursor: pointer; }
-    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; transition: 0.2s; }
-    button:hover { opacity: 0.8; }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
+    .admin-full-screen { width: 100vw; height: 100vh; background: var(--bg-color); flex-direction: column; align-items: center; padding: 40px; box-sizing: border-box; overflow-y: auto; }
     
-    /* FULL SCREEN ADMIN STYLE */
-    .admin-full-screen { width: 100vw; height: 100vh; background: var(--bg-color); flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px; box-sizing: border-box; overflow-y: auto; }
-    .admin-container { width: 100%; max-width: 800px; }
-
-    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 480px; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; }
-    .close-x { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #888; }
-
+    #logBox { height: 200px; overflow-y: auto; background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 10px; border-radius: 6px; font-size: 12px; border: 1px solid #333; margin-top: 10px; }
     #chatBox { height: 380px; overflow-y: auto; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin: 10px 0; }
     .msg { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #333; font-size: 14px; }
     .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #333; }
-    input { padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); margin: 5px 0; font-size: 14px; }
+    input { padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); margin: 5px 0; }
   </style>
 </head>
 <body>
@@ -59,35 +53,32 @@
   </div>
 
   <div id="adminModal" class="modal-overlay admin-full-screen">
-    <div class="admin-container">
+    <div style="width:100%; max-width:900px;">
         <div style="display:flex; justify-content: space-between; align-items: center;">
-            <h1 style="color:#ff9f1c;">🛡️ Master Admin Terminal</h1>
-            <button onclick="closeModal('adminModal')" style="font-size: 20px;">Exit Dashboard</button>
+            <h1 style="color:#ff9f1c;">🛡️ System Dashboard</h1>
+            <button onclick="closeModal('adminModal')">Close Panel</button>
         </div>
         
-        <hr style="border:0; border-top: 1px solid #444; margin: 30px 0;">
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-            <div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
                 <h3>User Investigation</h3>
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="lookupTarget" placeholder="Target username..." style="flex:1;">
-                    <button onclick="lookupUser()" style="background:#4cc9f0; color:black;">Inspect</button>
-                </div>
-                <div id="lookupResult" style="margin-top:20px;"></div>
+                <input type="text" id="lookupTarget" placeholder="Username..." style="width:70%;">
+                <button onclick="lookupUser()">Inspect</button>
+                <div id="lookupResult" style="margin-top:10px;"></div>
             </div>
 
-            <div>
-                <h3>Global Announcements</h3>
-                <input type="text" id="announceMsg" placeholder="Type broadcast message..." style="width:100%;">
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button onclick="sendBroadcast()" style="background:#28a745; color:white; flex:1;">Send Broadcast</button>
-                    <button onclick="removeBroadcast()" style="background:#780000; color:white; flex:1;">Remove Current</button>
-                </div>
-
-                <h3 style="margin-top:40px;">System Cleaners</h3>
-                <button onclick="clearGlobalChat()" style="background:#780000; color:white; width:100%;">☢ WIPE GLOBAL CHAT</button>
+            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
+                <h3>Global Controls</h3>
+                <input type="text" id="announceMsg" placeholder="Broadcast text..." style="width:100%;">
+                <button onclick="sendBroadcast()" style="background:#28a745; color:white; margin-top:5px;">Send</button>
+                <button onclick="removeBroadcast()" style="background:#780000; color:white;">Remove Banner</button>
+                <button onclick="clearGlobalChat()" style="display:block; width:100%; margin-top:10px; background:red; color:white;">☢ WIPE GLOBAL CHAT</button>
             </div>
+        </div>
+
+        <div style="background:var(--card-bg); padding:20px; border-radius:12px; margin-top:20px;">
+            <h3>📊 Live Server Logs</h3>
+            <div id="logBox"></div>
         </div>
     </div>
   </div>
@@ -96,61 +87,20 @@
     <div class="modal-content">
       <span class="close-x" onclick="closeModal('socialNavModal')">&times;</span>
       <h2>Social</h2>
-      <button onclick="openChat('global_room', 'Global Chat'); closeModal('socialNavModal');" style="background:#4cc9f0; color:black; margin-bottom:10px; padding:15px;">🌍 Open Global Chat</button>
-      <button onclick="closeModal('socialNavModal'); openFriendsList();" style="padding:15px;">👥 Friends & DMs</button>
+      <button onclick="openChat('global_room', 'Global Chat'); closeModal('socialNavModal');" style="background:#4cc9f0; color:black; margin-bottom:10px; padding:15px; width:100%;">🌍 Open Global Chat</button>
+      <button onclick="closeModal('socialNavModal'); openFriendsList();" style="padding:15px; width:100%;">👥 Friends & DMs</button>
     </div>
   </div>
 
-  <div id="friendsModal" class="modal-overlay">
-    <div class="modal-content">
-      <span class="close-x" onclick="closeModal('friendsModal')">&times;</span>
-      <h3>Friends</h3>
-      <div style="display:flex; gap:5px;"><input type="text" id="friendName" placeholder="Username..." style="flex:1;"><button onclick="sendFriendRequest()">Add</button></div>
-      <h4>Requests</h4><div id="requestsList"></div>
-      <h4>My Friends</h4><div id="friendsList"></div>
-    </div>
-  </div>
-
-  <div id="settingsModal" class="modal-overlay">
-    <div class="modal-content">
-      <span class="close-x" onclick="closeModal('settingsModal')">&times;</span>
-      <h2>User Settings</h2>
-      <label>Display Name:</label>
-      <input type="text" id="nameInput" placeholder="New Name">
-      <button onclick="updateDisplayName()" style="background:#28a745; color:white; margin-bottom:15px;">Update Name</button>
-      <label>Profile Picture URL:</label>
-      <input type="text" id="pfpInput" placeholder="https://image-link.com/img.jpg">
-      <button onclick="updatePfp()" style="background:#4cc9f0; color:black;">Update Photo</button>
-    </div>
-  </div>
-
-  <div id="chatModal" class="modal-overlay">
-    <div class="modal-content" style="width:550px;">
-      <span class="close-x" onclick="closeModal('chatModal')">&times;</span>
-      <h3 id="chatTitle">Chat</h3>
-      <div id="chatBox"></div>
-      <div style="display:flex; gap:5px;">
-        <input type="text" id="chatInput" style="flex:1;">
-        <button id="recordBtn" onclick="toggleRecording()">🎤</button>
-        <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="authModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>Vault Access</h2>
-      <input type="text" id="regName" placeholder="Username">
-      <input type="email" id="authEmail" placeholder="Email">
-      <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()" style="background:#28a745; color:white; padding:15px;">Enter</button>
-    </div>
-  </div>
+  <div id="friendsModal" class="modal-overlay"><div class="modal-content"><span class="close-x" onclick="closeModal('friendsModal')">&times;</span><h3>Friends</h3><div style="display:flex; gap:5px;"><input type="text" id="friendName" placeholder="Username..." style="flex:1;"><button onclick="sendFriendRequest()">Add</button></div><h4>Requests</h4><div id="requestsList"></div><h4>My Friends</h4><div id="friendsList"></div></div></div>
+  <div id="settingsModal" class="modal-overlay"><div class="modal-content"><span class="close-x" onclick="closeModal('settingsModal')">&times;</span><h2>User Settings</h2><label>Display Name:</label><input type="text" id="nameInput"><button onclick="updateDisplayName()" style="background:#28a745; color:white;">Update Name</button><label>PFP URL:</label><input type="text" id="pfpInput"><button onclick="updatePfp()" style="background:#4cc9f0; color:black;">Update Photo</button></div></div>
+  <div id="chatModal" class="modal-overlay"><div class="modal-content" style="width:550px;"><span class="close-x" onclick="closeModal('chatModal')">&times;</span><h3 id="chatTitle">Chat</h3><div id="chatBox"></div><div style="display:flex; gap:5px;"><input type="text" id="chatInput" style="flex:1;"><button id="recordBtn" onclick="toggleRecording()">🎤</button><button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button></div></div></div>
+  <div id="authModal" class="modal-overlay"><div class="modal-content"><h2>Vault Access</h2><input type="text" id="regName" placeholder="Username"><input type="email" id="authEmail" placeholder="Email"><input type="password" id="authPw" placeholder="Password"><button onclick="handleAuth()" style="background:#28a745; color:white; padding:15px;">Enter</button></div></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch, deleteDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -166,7 +116,7 @@
     const db = getFirestore(app);
 
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
-    let activeChatId = "global_room", chatUnsubscribe = null, mediaRecorder, audioChunks = [];
+    let activeChatId = "global_room", chatUnsubscribe = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -175,132 +125,110 @@
         document.getElementById('navPfp').src = user.photoURL || 'default-pfp.png';
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
-        if(user.uid === OWNER_UID) document.getElementById('adminBtn').style.display = 'block';
+        if(user.uid === OWNER_UID) {
+            document.getElementById('adminBtn').style.display = 'block';
+            listenToLogs();
+        }
+        addLog(`${user.displayName} connected to the vault.`);
         listenToBroadcast();
         listenToRequests();
       } else { openModal('authModal'); }
     });
 
-    // ADMIN FEATURES
-    window.lookupUser = async () => {
-        const name = document.getElementById('lookupTarget').value.toLowerCase().trim();
-        const userSnap = await getDoc(doc(db, "usernames", name));
-        const resDiv = document.getElementById('lookupResult');
-        if (userSnap.exists()) {
-            const uid = userSnap.data().uid;
-            resDiv.innerHTML = `<div style="background:var(--input-bg); padding:15px; border-radius:8px; border:1px solid #444;">
-                <p><b>Target:</b> ${name}</p>
-                <p><b>UID:</b> ${uid}</p>
-                <button onclick="spyDMs('${uid}', '${name}')" class="btn-blue">Spy Private DMs</button>
-            </div>`;
-        } else { resDiv.innerHTML = "User not found."; }
-    };
-
-    window.spyDMs = async (targetUid, targetName) => {
-        const friendsSnap = await getDocs(collection(db, "users", targetUid, "friends"));
-        let html = `<h4>${targetName}'s Connections:</h4>`;
-        friendsSnap.forEach(f => {
-            const dmId = targetUid < f.id ? `${targetUid}_${f.id}` : `${f.id}_targetUid`;
-            html += `<div class="list-item">With ${f.data().name} <button class="btn-blue" onclick="openChat('${dmId}', 'Spying: ${targetName}')">Listen In</button></div>`;
-        });
-        document.getElementById('lookupResult').innerHTML = html || "No friends found.";
-    };
-
-    window.sendBroadcast = async () => {
-        const msg = document.getElementById('announceMsg').value;
-        if(msg) await setDoc(doc(db, "settings", "broadcast"), { text: msg, active: true });
-    };
-
-    window.removeBroadcast = async () => {
-        await setDoc(doc(db, "settings", "broadcast"), { active: false });
-    };
-
-    // SETTINGS
-    window.updateDisplayName = async () => {
-        const n = document.getElementById('nameInput').value.trim();
-        if(n) { await updateProfile(auth.currentUser, { displayName: n }); document.getElementById('userGreeting').innerText = n; alert("Updated!"); }
-    };
-    window.updatePfp = async () => {
-        const u = document.getElementById('pfpInput').value.trim();
-        if(u) { await updateProfile(auth.currentUser, { photoURL: u }); document.getElementById('navPfp').src = u; alert("PFP Updated!"); }
-    };
-
-    // FRIENDS & DM ENGINE
-    window.openFriendsList = () => { openModal('friendsModal'); loadFriends(); };
-    function loadFriends() {
-        onSnapshot(collection(db, "users", auth.currentUser.uid, "friends"), (snap) => {
-            const list = document.getElementById('friendsList');
-            list.innerHTML = "";
+    // LOGGING SYSTEM
+    async function addLog(text) {
+        await addDoc(collection(db, "logs"), { text, time: Date.now() });
+    }
+    function listenToLogs() {
+        const q = query(collection(db, "logs"), orderBy("time", "desc"), limit(50));
+        onSnapshot(q, (snap) => {
+            const box = document.getElementById('logBox');
+            box.innerHTML = "";
             snap.forEach(d => {
-                list.innerHTML += `<div class="list-item"><b>${d.data().name}</b>
-                    <div>
-                        <button class="btn-blue" onclick="openChat('${auth.currentUser.uid < d.id ? auth.currentUser.uid+'_'+d.id : d.id+'_'+auth.currentUser.uid}', '${d.data().name}')">DM</button>
-                        <button class="btn-red" onclick="unfriend('${d.id}')">Unfriend</button>
-                    </div>
-                </div>`;
+                const date = new Date(d.data().time).toLocaleTimeString();
+                box.innerHTML += `<div>[${date}] ${d.data().text}</div>`;
             });
         });
     }
-    window.unfriend = async (fId) => {
-        if(confirm("Unfriend?")) {
-            await deleteDoc(doc(db, "users", auth.currentUser.uid, "friends", fId));
-            await deleteDoc(doc(db, "users", fId, "friends", auth.currentUser.uid));
+
+    // ADMIN ACTIONS
+    window.lookupUser = async () => {
+        const n = document.getElementById('lookupTarget').value.toLowerCase().trim();
+        const s = await getDoc(doc(db, "usernames", n));
+        if (s.exists()) {
+            const uid = s.data().uid;
+            document.getElementById('lookupResult').innerHTML = `UID: ${uid} <button onclick="spyDMs('${uid}', '${n}')">Spy DMs</button>`;
+        } else alert("Not found");
+    };
+    window.spyDMs = async (uid, name) => {
+        const f = await getDocs(collection(db, "users", uid, "friends"));
+        let h = `<h4>${name}'s DMs:</h4>`;
+        f.forEach(d => {
+            const dmId = uid < d.id ? `${uid}_${d.id}` : `${d.id}_${uid}`;
+            h += `<div class="list-item">${d.data().name} <button onclick="openChat('${dmId}', 'Spying: ${name}')">Enter</button></div>`;
+        });
+        document.getElementById('lookupResult').innerHTML = h;
+    };
+    window.sendBroadcast = async () => { await setDoc(doc(db, "settings", "broadcast"), { text: document.getElementById('announceMsg').value, active: true }); };
+    window.removeBroadcast = async () => { await setDoc(doc(db, "settings", "broadcast"), { active: false }); };
+
+    // SETTINGS & FRIENDS
+    window.updateDisplayName = async () => {
+        const n = document.getElementById('nameInput').value.trim();
+        if(n) { 
+            addLog(`${auth.currentUser.displayName} changed name to ${n}`);
+            await updateProfile(auth.currentUser, { displayName: n }); 
+            location.reload(); 
         }
     };
+    window.updatePfp = async () => {
+        const u = document.getElementById('pfpInput').value.trim();
+        if(u) { await updateProfile(auth.currentUser, { photoURL: u }); location.reload(); }
+    };
 
-    // CHAT SYSTEM
+    // STANDARD CHAT/FRIEND LOGIC
+    window.openFriendsList = () => { openModal('friendsModal'); loadFriends(); };
+    function loadFriends() {
+        onSnapshot(collection(db, "users", auth.currentUser.uid, "friends"), (snap) => {
+            const l = document.getElementById('friendsList'); l.innerHTML = "";
+            snap.forEach(d => { l.innerHTML += `<div class="list-item"><b>${d.data().name}</b><button onclick="openChat('${auth.currentUser.uid < d.id ? auth.currentUser.uid+'_'+d.id : d.id+'_'+auth.currentUser.uid}', '${d.data().name}')">DM</button><button onclick="unfriend('${d.id}')" style="color:red; background:none; border:none;">X</button></div>`; });
+        });
+    }
+    window.unfriend = async (fId) => { if(confirm("Unfriend?")){ await deleteDoc(doc(db, "users", auth.currentUser.uid, "friends", fId)); await deleteDoc(doc(db, "users", fId, "friends", auth.currentUser.uid)); } };
     window.openChat = (chatId, title) => {
-      activeChatId = chatId; document.getElementById('chatTitle').innerText = title; openModal('chatModal');
-      if (chatUnsubscribe) chatUnsubscribe();
+      activeChatId = chatId; document.getElementById('chatTitle').innerText = title; openModal('chatModal'); if (chatUnsubscribe) chatUnsubscribe();
       const q = query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc"));
       chatUnsubscribe = onSnapshot(q, (snap) => {
         const box = document.getElementById('chatBox'); box.innerHTML = "";
         snap.forEach(m => {
           const d = m.data();
           if (activeChatId.includes(auth.currentUser.uid) && d.senderId !== auth.currentUser.uid && !d.read) updateDoc(doc(db, "chats", activeChatId, "messages", m.id), { read: true });
-          const readMark = (d.senderId === auth.currentUser.uid && d.read) ? '<span style="color:#4cc9f0;font-size:10px;float:right;">✓ Seen</span>' : '';
-          const content = d.type === 'voice' ? `<audio controls src="${d.text}" style="width:100%;height:35px;"></audio>` : `<span>${d.text}</span>`;
-          box.innerHTML += `<div class="msg"><b>${d.sender}</b><br>${content}${readMark}</div>`;
+          box.innerHTML += `<div class="msg"><b>${d.sender}</b>: ${d.text} ${d.read ? '<span style="color:#4cc9f0;font-size:10px;">✓</span>' : ''}</div>`;
         });
         box.scrollTop = box.scrollHeight;
       });
     };
-
     window.sendMessage = async () => {
       const v = document.getElementById('chatInput').value; if(!v) return;
       await addDoc(collection(db, "chats", activeChatId, "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, text: v, type: 'text', time: Date.now(), read: false });
       document.getElementById('chatInput').value = "";
     };
 
-    // GLOBAL STUFF
+    // MISC
     window.handleAuth = async () => {
       const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
-      try { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); location.reload(); } catch { await signInWithEmailAndPassword(auth, e, p); location.reload(); }
+      try { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); addLog(`New user joined: ${n}`); location.reload(); } 
+      catch { await signInWithEmailAndPassword(auth, e, p); location.reload(); }
     };
     window.handleLogout = () => signOut(auth).then(() => location.reload());
-    window.openModal = (id) => { document.getElementById(id).style.display = (id === 'adminModal' ? 'flex' : 'flex'); };
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeModal = (id) => document.getElementById(id).style.display = 'none';
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
     function listenToBroadcast() { onSnapshot(doc(db, "settings", "broadcast"), (d) => { const b = document.getElementById('broadcastBanner'); if(d.exists() && d.data().active){ b.innerText = "📢 " + d.data().text; b.style.display='block'; } else b.style.display='none'; }); }
     window.clearGlobalChat = async () => { if(confirm("Wipe?")){ const q = await getDocs(collection(db, "chats", "global_room", "messages")); const b = writeBatch(db); q.forEach(d => b.delete(d.ref)); await b.commit(); } };
-    
-    // VOICE LOGIC
-    window.toggleRecording = async () => {
-      if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(s); audioChunks = [];
-        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-        mediaRecorder.onstop = () => {
-          const r = new FileReader(); r.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
-          r.onloadend = () => addDoc(collection(db, "chats", activeChatId, "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, text: r.result, type: 'voice', time: Date.now(), read: false });
-        };
-        mediaRecorder.start(); document.getElementById('recordBtn').style.color = "red";
-      } else { mediaRecorder.stop(); document.getElementById('recordBtn').style.color = "inherit"; }
-    };
     window.sendFriendRequest = async () => { const n = document.getElementById('friendName').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", n)); if(s.exists()) await setDoc(doc(db, "users", s.data().uid, "requests", auth.currentUser.uid), { senderName: auth.currentUser.displayName, senderUid: auth.currentUser.uid }); };
     function listenToRequests() { if(!auth.currentUser) return; onSnapshot(collection(db, "users", auth.currentUser.uid, "requests"), (snap) => { const l = document.getElementById('requestsList'); l.innerHTML = ""; snap.forEach(d => { l.innerHTML += `<div class="list-item">${d.data().senderName} <button onclick="acceptFriend('${d.id}','${d.data().senderName}')">Accept</button></div>`; }); }); }
     window.acceptFriend = async (uid, n) => { await setDoc(doc(db, "users", auth.currentUser.uid, "friends", uid), { name: n }); await setDoc(doc(db, "users", uid, "friends", auth.currentUser.uid), { name: auth.currentUser.displayName }); await deleteDoc(doc(db, "users", auth.currentUser.uid, "requests", uid)); };
-
   </script>
 </body>
 </html>
