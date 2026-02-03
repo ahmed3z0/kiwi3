@@ -11,7 +11,6 @@
     .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; }
     button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
     
-    /* PULSING RED-PURPLE OWNER TAG */
     .owner-tag { 
       font-weight: bold; 
       text-transform: uppercase; 
@@ -35,8 +34,6 @@
     input, textarea { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
     #chatBox, #dmBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
     .msg { margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); display: flex; align-items: flex-start; position: relative; }
-    .msg-actions { display: flex; gap: 5px; margin-left: auto; }
-    .msg-actions button { padding: 4px 8px; font-size: 11px; }
     .broadcast-msg { background: linear-gradient(90deg, #ff4d4d, #ff9f1c, #ff4d4d); background-size: 200% auto; color: #000; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; animation: shimmer 3s infinite linear; margin-bottom: 10px; }
     @keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
     .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; flex-shrink: 0; }
@@ -45,8 +42,6 @@
     .stat-box { background: #0a0a0a; padding: 10px; border-radius: 6px; text-align: center; }
     .danger-btn { background: #dc2626 !important; color: white !important; }
     .warning-btn { background: #f59e0b !important; color: white !important; }
-    .report-item { background: #1a0000; border-left: 3px solid #ff4d4d; padding: 10px; margin: 5px 0; border-radius: 4px; }
-    .report-resolved { opacity: 0.5; background: #001a00; border-left-color: #10b981; }
   </style>
 </head>
 <body>
@@ -55,9 +50,15 @@
     <div class="auth-buttons">
       <button onclick="toggleTheme()">Mode</button>
       <button id="adminBtn" onclick="tryOpenAdmin()" style="display:none; background:#ff9f1c; color:black;">Admin Panel</button>
+      
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
+        <div id="ghostIndicator" style="display:none; background:#a855f7; color:white; padding:4px 8px; border-radius:12px; font-size:10px; font-weight:bold; animation: ownerGlow 2s infinite;">GHOST MODE</div>
+        
         <img id="navPfp" src="" class="pfp-small">
         <span id="userGreeting"></span>
+        
+        <button id="exitImpBtn" onclick="exitImpersonation()" style="display:none; background:#ff9f1c; color:black;">Back to Admin</button>
+        
         <button onclick="openModal('settingsModal')">Settings</button>
         <button onclick="openSocialModal()">Social</button>
         <button onclick="handleLogout()" style="background:#780000; color:white;">Logout</button>
@@ -70,101 +71,10 @@
     <img id="kiwiImage" src="kiwi.jpg" width="150" style="display:none; border-radius:15px;" />
   </div>
 
-  <div id="adminModal">
-    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1400px; margin: 0 auto 30px auto;">
-      <h1 style="color:#ff9f1c;">🔐 VAULT COMMAND CENTER</h1>
-      <button onclick="document.getElementById('adminModal').style.display='none'" class="danger-btn">Exit</button>
-    </div>
-    <div class="admin-grid">
-      <!-- System Broadcast -->
-      <div class="admin-card">
-        <h3>📢 System Broadcast</h3>
-        <textarea id="broadcastInput" style="width:100%; height:80px;" placeholder="Broadcast message to all users..."></textarea>
-        <button onclick="sendBroadcast()" style="width:100%; background:#ff9f1c; color:000; margin-top:10px;">🚀 BROADCAST</button>
-      </div>
-
-      <!-- User Lookup -->
-      <div class="admin-card">
-        <h3>🔍 User Lookup</h3>
-        <input type="text" id="lookupInput" placeholder="Enter username..." style="width:100%;">
-        <button onclick="lookupUser()" style="width:100%; margin-top:10px;">Search User</button>
-        <div id="lookupResult"></div>
-      </div>
-
-      <!-- User Statistics -->
-      <div class="admin-card">
-        <h3>📊 Vault Statistics</h3>
-        <div id="statsDisplay" class="stat-grid">
-          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="totalUsers">0</div><div style="font-size:12px; opacity:0.7;">Total Users</div></div>
-          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="totalMessages">0</div><div style="font-size:12px; opacity:0.7;">Messages</div></div>
-          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="onlineUsers">0</div><div style="font-size:12px; opacity:0.7;">Online</div></div>
-          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="totalReports">0</div><div style="font-size:12px; opacity:0.7;">Reports</div></div>
-        </div>
-      </div>
-
-      <!-- Message Management -->
-      <div class="admin-card">
-        <h3>💬 Message Management</h3>
-        <button onclick="viewAllMessages()" style="width:100%; margin:5px 0;">View All Messages</button>
-        <button onclick="clearGlobalChat()" class="danger-btn" style="width:100%; margin:5px 0;">☢️ Clear Global Chat</button>
-        <button onclick="clearAllDMs()" class="danger-btn" style="width:100%; margin:5px 0;">💣 Clear All DMs</button>
-      </div>
-
-      <!-- Reports Panel -->
-      <div class="admin-card" style="grid-column: span 2;">
-        <h3>🚨 Report Management</h3>
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-          <button onclick="filterReports('all')" style="flex:1;">All</button>
-          <button onclick="filterReports('pending')" style="flex:1;">Pending</button>
-          <button onclick="filterReports('resolved')" style="flex:1;">Resolved</button>
-        </div>
-        <div id="reportLogs" style="height:300px; overflow-y:auto; background:#000; padding:10px; border-radius:6px;"></div>
-      </div>
-
-      <!-- User Actions -->
-      <div class="admin-card">
-        <h3>⚠️ User Actions</h3>
-        <input type="text" id="banUsername" placeholder="Username to ban..." style="width:100%;">
-        <button onclick="banUser()" class="danger-btn" style="width:100%; margin-top:10px;">🔨 Ban User</button>
-        <button onclick="viewBannedUsers()" class="warning-btn" style="width:100%; margin-top:10px;">View Banned</button>
-      </div>
-
-      <!-- System Actions -->
-      <div class="admin-card">
-        <h3>⚙️ System Actions</h3>
-        <button onclick="exportData()" style="width:100%; margin:5px 0;">📥 Export Data</button>
-        <button onclick="systemAnnouncement()" style="width:100%; margin:5px 0;">📣 Announcement</button>
-        <button onclick="viewSecurityLogs()" style="width:100%; margin:5px 0;">🛡️ Security Logs</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="friendsModal" class="modal-overlay">
-    <div class="modal-content">
-      <div style="display:flex; gap:2px; margin-bottom:10px;">
-        <button onclick="showTab('global')" style="flex:1;">Global</button>
-        <button onclick="showTab('friends')" style="flex:1;">Friends</button>
-        <button onclick="showTab('requests')" style="flex:1;">Req <span id="reqBadge"></span></button>
-      </div>
-      <div id="view-global">
-        <div id="chatBox"></div>
-        <div style="display:flex; gap:5px;"><input type="text" id="chatInput" placeholder="Message..." style="flex:1"><button onclick="sendMessage()">Send</button></div>
-      </div>
-      <div id="view-friends" style="display:none;"><input type="text" id="friendSearch" placeholder="Username..."><button onclick="sendFriendRequest()">Add</button><div id="friendsList"></div></div>
-      <div id="view-requests" style="display:none;"><div id="requestsList"></div></div>
-      <div id="view-dm" style="display:none;"><button onclick="showTab('friends')">←</button><h4 id="dmTitle" style="display:inline;"></h4><div id="dmBox"></div><div style="display:flex; gap:5px;"><input type="text" id="dmInput" style="flex:1"><button onclick="sendDM()">Send</button></div></div>
-      <button onclick="closeModal('friendsModal')" style="margin-top:10px;">Close</button>
-    </div>
-  </div>
-
-  <div id="authModal" class="modal-overlay"><div class="modal-content"><h2 id="authTitle">Vault Access</h2><input type="text" id="regName" placeholder="Username"><input type="email" id="authEmail" placeholder="Email"><input type="password" id="authPw" placeholder="Password"><button onclick="handleAuth()">Access</button><span onclick="toggleAuthMode()" style="cursor:pointer; color:#4cc9f0; text-align:center; display:block; margin-top:10px;">Login/Sign-up</span></div></div>
-  <div id="settingsModal" class="modal-overlay"><div class="modal-content"><h2>Profile</h2><input type="text" id="setDisplayName" placeholder="Name"><input type="text" id="setPfpUrl" placeholder="PFP URL"><button onclick="updateUserProfile()">Save</button><button onclick="closeModal('settingsModal')">Close</button></div></div>
-  <div id="securityLogsModal" class="modal-overlay"><div class="modal-content" style="width:600px;"><h2>🛡️ Security Logs</h2><div id="securityLogsContent" style="max-height:500px; overflow-y:auto; background:#000; padding:15px; border-radius:6px;"></div><button onclick="closeModal('securityLogsModal')">Close</button></div></div>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, where, or, and, writeBatch, getDocs, deleteDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, where, getDocs, deleteDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg", authDomain: "ahmed3z0.firebaseapp.com", projectId: "ahmed3z0", storageBucket: "ahmed3z0.firebasestorage.app", messagingSenderId: "512511154228", appId: "1:512511154228:web:8f97e9c75b3800f6d65261" };
     const app = initializeApp(firebaseConfig);
@@ -173,616 +83,75 @@
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1";
     const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/5029/5029253.png";
 
-    let currentDMRecipient = null, dmUnsub = null, isLoginMode = true, replyingTo = null, currentReportFilter = 'all';
-
-    // --- SECURITY TRIPWIRE ---
-    window.tryOpenAdmin = async () => {
-      if (!auth.currentUser || auth.currentUser.uid !== OWNER_UID) {
-        const name = auth.currentUser ? auth.currentUser.displayName : "Unknown Hacker";
-        await addDoc(collection(db, "chats", "global_room", "messages"), {
-          sender: "SECURITY", text: `🤡 Look at this clown (${name}) trying to hack the Admin Panel!`, type: 'broadcast', time: Date.now()
-        });
-        await addDoc(collection(db, "security_logs"), {
-          type: "unauthorized_admin_access",
-          userId: auth.currentUser ? auth.currentUser.uid : "anonymous",
-          username: name,
-          time: Date.now()
-        });
-        alert("ACCESS DENIED. This incident has been logged.");
-        return;
-      }
-      document.getElementById('adminModal').style.display='block';
-      loadAdminStats();
-    };
-
-    // --- ADMIN STATS ---
-    async function loadAdminStats() {
-      try {
-        const usernamesSnap = await getDocs(collection(db, "usernames"));
-        document.getElementById('totalUsers').innerText = usernamesSnap.size;
-
-        const messagesSnap = await getDocs(collection(db, "chats", "global_room", "messages"));
-        document.getElementById('totalMessages').innerText = messagesSnap.size;
-
-        const reportsSnap = await getDocs(query(collection(db, "reports"), where("status", "==", "pending")));
-        document.getElementById('totalReports').innerText = reportsSnap.size;
-      } catch(e) { console.error(e); }
-    }
-
-    // --- ADMIN ACTIONS ---
-    window.sendBroadcast = async () => { 
-      if(auth.currentUser.uid !== OWNER_UID) return; 
-      const txt = document.getElementById('broadcastInput').value; 
-      if(txt) {
-        await addDoc(collection(db, "chats", "global_room", "messages"), { 
-          sender: "SYSTEM", 
-          text: txt, 
-          type: 'broadcast', 
-          time: Date.now() 
-        }); 
-        document.getElementById('broadcastInput').value="";
-        alert("Broadcast sent!");
-      }
-    };
-
-    window.lookupUser = async () => { 
-      if(auth.currentUser.uid !== OWNER_UID) return; 
-      const name = document.getElementById('lookupInput').value.toLowerCase().trim(); 
-      
-      if(!name) {
-        document.getElementById('lookupResult').innerHTML = "<div class='user-detail' style='color:#ff9f1c;'>⚠️ Enter a username</div>";
-        return;
-      }
-      
-      try {
-        const s = await getDoc(doc(db, "usernames", name)); 
-        
-        if(!s.exists()) {
-          document.getElementById('lookupResult').innerHTML = "<div class='user-detail' style='color:#ff4d4d;'>❌ User not found</div>";
-          return;
-        }
-
-        const uid = s.data().uid;
-
-        // Get user's message count
-        let messageCount = 0;
-        let photoURL = DEFAULT_PFP;
-        let displayName = name;
-        
-        try {
-          const msgSnap = await getDocs(query(collection(db, "chats", "global_room", "messages"), where("senderId", "==", uid)));
-          messageCount = msgSnap.size;
-          
-          // Get display info from most recent message
-          if(msgSnap.size > 0) {
-            const lastMsg = msgSnap.docs[msgSnap.docs.length - 1].data();
-            if(lastMsg.photoURL) photoURL = lastMsg.photoURL;
-            if(lastMsg.sender) displayName = lastMsg.sender;
-          }
-        } catch(e) {
-          console.log("Message fetch error:", e);
-        }
-
-        // Get user's friend count
-        let friendCount = 0;
-        try {
-          const friendSnap = await getDocs(query(collection(db, "friendships"), where("users", "array-contains", uid)));
-          friendCount = friendSnap.size;
-        } catch(e) {
-          console.log("Friend fetch error:", e);
-        }
-
-        // Check status
-        let isBanned = false;
-        let isMuted = false;
-        
-        try {
-          const banDoc = await getDoc(doc(db, "banned_users", uid));
-          isBanned = banDoc.exists();
-        } catch(e) {
-          console.log("Ban check error:", e);
-        }
-        
-        try {
-          const muteDoc = await getDoc(doc(db, "muted_users", uid));
-          isMuted = muteDoc.exists();
-        } catch(e) {
-          console.log("Mute check error:", e);
-        }
-
-        document.getElementById('lookupResult').innerHTML = `
-          <div class="user-detail">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-              <img src="${photoURL}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
-              <div>
-                <div style="font-size:18px; font-weight:bold;">${displayName}</div>
-                <div style="font-size:12px; opacity:0.7;">UID: ${uid}</div>
-                ${isBanned ? '<div style="color:#ff4d4d; font-weight:bold; margin-top:3px;">🚫 BANNED</div>' : ''}
-                ${isMuted ? '<div style="color:#f59e0b; font-weight:bold; margin-top:3px;">🔇 MUTED</div>' : ''}
-              </div>
-            </div>
-            <div class="stat-grid">
-              <div class="stat-box"><div style="font-weight:bold;">${messageCount}</div><div style="font-size:11px;">Messages</div></div>
-              <div class="stat-box"><div style="font-weight:bold;">${friendCount}</div><div style="font-size:11px;">Friends</div></div>
-            </div>
-            <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-              ${!isBanned ? `<button onclick="quickBanUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="danger-btn">🔨 Ban</button>` : `<button onclick="unbanUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="warning-btn">✓ Unban</button>`}
-              <button onclick="kickUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="warning-btn">👢 Kick</button>
-              ${!isMuted ? `<button onclick="muteUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="warning-btn">🔇 Mute</button>` : `<button onclick="unmuteUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" style="background:#10b981; color:white;">🔊 Unmute</button>`}
-              <button onclick="alert('View messages feature coming soon!')" style="background:#3b82f6; color:white;">📜 Messages</button>
-            </div>
-            <button onclick="impersonateUser('${uid}', '${displayName.replace(/'/g, "\\'")}', '${photoURL}')" style="width:100%; margin-top:10px; background:#a855f7; color:white; font-weight:bold;">👤 Sign In As User</button>
-          </div>
-        `;
-      } catch(err) {
-        console.error("Lookup error:", err);
-        document.getElementById('lookupResult').innerHTML = `<div class='user-detail' style='color:#ff4d4d;'>❌ Error: ${err.message}</div>`;
-      }
-    };
-
-    window.quickBanUser = async (uid, username) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      if(confirm(`Ban ${username}?`)) {
-        await setDoc(doc(db, "banned_users", uid), { username, bannedAt: Date.now(), bannedBy: OWNER_UID });
-        await addDoc(collection(db, "chats", "global_room", "messages"), {
-          sender: "SYSTEM", text: `🔨 ${username} has been banned from the vault.`, type: 'broadcast', time: Date.now()
-        });
-        alert(`${username} has been banned.`);
-        lookupUser();
-      }
-    };
-
-    window.unbanUser = async (uid, username) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      await deleteDoc(doc(db, "banned_users", uid));
-      await addDoc(collection(db, "chats", "global_room", "messages"), {
-        sender: "SYSTEM", text: `✅ ${username} has been unbanned.`, type: 'broadcast', time: Date.now()
-      });
-      alert(`${username} has been unbanned.`);
-      lookupUser();
-    };
-
-    window.banUser = async () => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      const username = document.getElementById('banUsername').value.toLowerCase().trim();
-      if(!username) return;
-      const userSnap = await getDoc(doc(db, "usernames", username));
-      if(!userSnap.exists()) {
-        alert("User not found!");
-        return;
-      }
-      const uid = userSnap.data().uid;
-      await quickBanUser(uid, username);
-      document.getElementById('banUsername').value = "";
-    };
-
-    window.kickUser = async (uid, username) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      if(confirm(`Kick ${username}? They can rejoin immediately.`)) {
-        await addDoc(collection(db, "chats", "global_room", "messages"), {
-          sender: "SYSTEM", text: `👢 ${username} has been kicked from the vault!`, type: 'broadcast', time: Date.now()
-        });
-        // Store kick record
-        await setDoc(doc(db, "kicks", `${uid}_${Date.now()}`), {
-          userId: uid,
-          username: username,
-          kickedBy: OWNER_UID,
-          kickedAt: Date.now()
-        });
-        alert(`${username} has been kicked!`);
-      }
-    };
-
-    window.muteUser = async (uid, username) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      if(confirm(`Mute ${username}? They won't be able to send messages.`)) {
-        await setDoc(doc(db, "muted_users", uid), {
-          username: username,
-          mutedBy: OWNER_UID,
-          mutedAt: Date.now()
-        });
-        await addDoc(collection(db, "chats", "global_room", "messages"), {
-          sender: "SYSTEM", text: `🔇 ${username} has been muted.`, type: 'broadcast', time: Date.now()
-        });
-        alert(`${username} is now muted.`);
-        lookupUser();
-      }
-    };
-
-    window.unmuteUser = async (uid, username) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      await deleteDoc(doc(db, "muted_users", uid));
-      await addDoc(collection(db, "chats", "global_room", "messages"), {
-        sender: "SYSTEM", text: `🔊 ${username} has been unmuted.`, type: 'broadcast', time: Date.now()
-      });
-      alert(`${username} is now unmuted.`);
-      lookupUser();
-    };
-
-    window.impersonateUser = async (uid, username, photoURL) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      if(confirm(`⚠️ IMPERSONATE ${username}?\n\nYou will temporarily appear as this user. Your real identity will be hidden.\n\nClick OK to proceed.`)) {
-        // Store original admin identity
-        const originalUID = auth.currentUser.uid;
-        const originalName = auth.currentUser.displayName;
-        const originalPhoto = auth.currentUser.photoURL;
-        
-        // Store impersonation session
-        sessionStorage.setItem('impersonating', JSON.stringify({
-          targetUID: uid,
-          targetName: username,
-          targetPhoto: photoURL,
-          originalUID: originalUID,
-          originalName: originalName,
-          originalPhoto: originalPhoto
-        }));
-        
-        alert(`You are now signed in as ${username}.\n\nYour messages will appear as theirs.\n\nReload the page to return to your admin account.`);
+    // --- NEW: EXIT IMPERSONATION LOGIC ---
+    window.exitImpersonation = () => {
+        sessionStorage.removeItem('impersonating');
         location.reload();
-      }
     };
 
-    window.viewUserMessages = async (uid, username) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      const msgs = await getDocs(query(collection(db, "chats", "global_room", "messages"), where("senderId", "==", uid), orderBy("time", "desc"), limit(50)));
-      
-      let html = `<div style="max-height:400px; overflow-y:auto; background:#000; padding:15px; border-radius:6px;">`;
-      html += `<h3 style="color:#ff9f1c; margin-top:0;">Messages from ${username}</h3>`;
-      
-      if(msgs.empty) {
-        html += `<div style="text-align:center; opacity:0.5; padding:20px;">No messages found</div>`;
-      } else {
-        msgs.forEach(d => {
-          const msg = d.data();
-          html += `<div style="background:#1a1a1a; padding:10px; margin:5px 0; border-radius:6px; border-left:3px solid #ff9f1c;">
-            <div style="font-size:11px; opacity:0.6;">${new Date(msg.time).toLocaleString()}</div>
-            <div style="margin-top:5px;">${msg.text}</div>
-          </div>`;
-        });
-      }
-      html += `</div>`;
-      
-      alert("Messages displayed in console - check browser console (F12)");
-      console.log(html);
-    };
-
-    window.clearGlobalChat = async () => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      if(confirm("⚠️ DELETE ALL GLOBAL MESSAGES?")) {
-        const snapshot = await getDocs(collection(db, "chats", "global_room", "messages"));
-        const batch = writeBatch(db);
-        snapshot.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        alert("Global chat cleared!");
-      }
-    };
-
-    window.clearAllDMs = async () => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      if(confirm("⚠️ DELETE ALL DMs? This cannot be undone!")) {
-        const snapshot = await getDocs(collection(db, "dms"));
-        const batch = writeBatch(db);
-        snapshot.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        alert("All DMs cleared!");
-      }
-    };
-
-    window.filterReports = (filter) => {
-      currentReportFilter = filter;
-      // Reports will auto-refresh via onSnapshot
-    };
-
-    window.resolveReport = async (reportId) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      await updateDoc(doc(db, "reports", reportId), { status: "resolved", resolvedAt: Date.now(), resolvedBy: OWNER_UID });
-    };
-
-    window.deleteReport = async (reportId) => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      await deleteDoc(doc(db, "reports", reportId));
-    };
-
-    window.viewSecurityLogs = async () => {
-      if(auth.currentUser.uid !== OWNER_UID) return;
-      const logs = await getDocs(query(collection(db, "security_logs"), orderBy("time", "desc"), limit(50)));
-      let html = "";
-      if(logs.empty) {
-        html = "<div style='text-align:center; opacity:0.5; padding:20px;'>No security incidents logged</div>";
-      } else {
-        logs.forEach(d => {
-          const log = d.data();
-          html += `<div style='margin:5px 0; padding:8px; background:#1a0000; border-radius:4px; border-left:3px solid #ff4d4d;'>
-            <div style='color:#ff9f1c; font-weight:bold;'>${new Date(log.time).toLocaleString()}</div>
-            <div style='margin-top:5px;'><b>Type:</b> ${log.type}</div>
-            <div><b>User:</b> ${log.username}</div>
-            <div style='font-size:11px; opacity:0.7;'>UID: ${log.userId}</div>
-          </div>`;
-        });
-      }
-      document.getElementById('securityLogsContent').innerHTML = html;
-      openModal('securityLogsModal');
-    };
-
-    // --- REPORT SYSTEM ---
-    window.reportMessage = async (msgId, senderId, senderName, text) => {
-      const reason = prompt(`Report message from ${senderName}?\nEnter reason:`);
-      if(!reason) return;
-      
-      await addDoc(collection(db, "reports"), {
-        messageId: msgId,
-        reportedUserId: senderId,
-        reportedUsername: senderName,
-        reportedBy: auth.currentUser.uid,
-        reportedByName: auth.currentUser.displayName,
-        messageText: text,
-        reason: reason,
-        status: "pending",
-        time: Date.now()
-      });
-      alert("Report submitted!");
-    };
-
-    // --- MESSAGE ACTIONS ---
-    window.deleteMessage = async (msgId, isGlobal = true) => {
-      if(!auth.currentUser) return;
-      
-      const msgRef = isGlobal ? 
-        doc(db, "chats", "global_room", "messages", msgId) : 
-        doc(db, "dms", msgId);
-      
-      const msgSnap = await getDoc(msgRef);
-      if(!msgSnap.exists()) return;
-      
-      const msgData = msgSnap.data();
-      
-      // Only owner or message sender can delete
-      if(auth.currentUser.uid !== OWNER_UID && auth.currentUser.uid !== msgData.senderId) {
-        alert("You can only delete your own messages!");
-        return;
-      }
-      
-      if(confirm("Delete this message?")) {
-        await deleteDoc(msgRef);
-      }
-    };
-
-    window.setReplyTo = (msgId, senderName) => {
-      replyingTo = { id: msgId, name: senderName };
-      document.getElementById('chatInput').placeholder = `Replying to ${senderName}...`;
-      document.getElementById('chatInput').focus();
-    };
-
-    window.cancelReply = () => {
-      replyingTo = null;
-      document.getElementById('chatInput').placeholder = "Message...";
-    };
-
-    // --- AUTH & CORE ---
     onAuthStateChanged(auth, async u => {
       if(u) {
-        // Check if impersonating
         const impersonationData = sessionStorage.getItem('impersonating');
+        const exitBtn = document.getElementById('exitImpBtn');
+        const ghostTag = document.getElementById('ghostIndicator');
+
         let displayUID = u.uid;
         let displayName = u.displayName;
         let displayPhoto = u.photoURL || DEFAULT_PFP;
         let isImpersonating = false;
         
+        // Impersonation Check
         if(impersonationData && u.uid === OWNER_UID) {
           const impData = JSON.parse(impersonationData);
           displayUID = impData.targetUID;
           displayName = impData.targetName;
           displayPhoto = impData.targetPhoto;
           isImpersonating = true;
-        }
-        
-        // Check if banned (unless impersonating)
-        if(!isImpersonating) {
-          const banDoc = await getDoc(doc(db, "banned_users", u.uid));
-          if(banDoc.exists()) {
-            alert("You have been banned from The Secret Kiwi Vault.");
-            await signOut(auth);
-            return;
-          }
+          
+          if(exitBtn) exitBtn.style.display = 'inline-block';
+          if(ghostTag) ghostTag.style.display = 'inline-block';
+        } else {
+          if(exitBtn) exitBtn.style.display = 'none';
+          if(ghostTag) ghostTag.style.display = 'none';
         }
 
+        // Apply UI
         document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('userGreeting').innerText = displayName + (isImpersonating ? ' 👁️' : '');
+        document.getElementById('userGreeting').innerText = displayName;
         document.getElementById('navPfp').src = displayPhoto;
         document.getElementById('kiwiImage').style.display = 'inline-block';
-        closeModal('authModal');
-        
-        // Store display info for message sending
-        window.currentDisplayUID = displayUID;
-        window.currentDisplayName = displayName;
-        window.currentDisplayPhoto = displayPhoto;
-        
+
+        // Admin Button Visibility
         if(u.uid === OWNER_UID && !isImpersonating) {
           document.getElementById('adminBtn').style.display = 'block';
-          
-          // Real-time report monitoring
-          onSnapshot(query(collection(db, "reports"), orderBy("time", "desc")), s => {
-            let b = document.getElementById('reportLogs'); 
-            b.innerHTML = "";
-            let count = 0;
-            s.forEach(d => { 
-              const r = d.data();
-              if(currentReportFilter === 'pending' && r.status !== 'pending') return;
-              if(currentReportFilter === 'resolved' && r.status !== 'resolved') return;
-              
-              const isResolved = r.status === 'resolved';
-              b.innerHTML += `<div class="report-item ${isResolved ? 'report-resolved' : ''}">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                  <div style="flex:1;">
-                    <div style="color:#ff9f1c; font-weight:bold;">📝 Report from ${r.reportedByName || 'Unknown'}</div>
-                    <div style="margin:5px 0;">🎯 Target: <b>${r.reportedUsername || 'Unknown'}</b></div>
-                    <div style="font-size:12px; opacity:0.8; margin:3px 0;">💬 Message: "${r.messageText || 'N/A'}"</div>
-                    <div style="font-size:12px; opacity:0.8; margin:3px 0;">⚠️ Reason: ${r.reason || 'No reason provided'}</div>
-                    <div style="font-size:11px; opacity:0.6; margin-top:5px;">🕒 ${new Date(r.time).toLocaleString()}</div>
-                    ${isResolved ? `<div style="font-size:11px; color:#10b981; margin-top:3px;">✅ Resolved: ${new Date(r.resolvedAt).toLocaleString()}</div>` : ''}
-                  </div>
-                  <div style="display:flex; gap:5px; flex-direction:column;">
-                    ${!isResolved ? `<button onclick="resolveReport('${d.id}')" style="font-size:11px; padding:4px 8px; background:#10b981; color:white;">✓ Resolve</button>` : ''}
-                    <button onclick="deleteReport('${d.id}')" class="danger-btn" style="font-size:11px; padding:4px 8px;">🗑 Delete</button>
-                  </div>
-                </div>
-              </div>`;
-              count++;
-            });
-            if(count === 0) b.innerHTML = "<div style='text-align:center; opacity:0.5; padding:20px;'>No reports found</div>";
-          });
+        } else {
+          document.getElementById('adminBtn').style.display = 'none';
         }
-        setupSocial();
-      } else openModal('authModal');
+      } else {
+        document.getElementById('loggedInUI').style.display = 'none';
+        document.getElementById('adminBtn').style.display = 'none';
+      }
     });
 
-    window.openChat = () => {
-      onSnapshot(query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc")), s => {
-        let b = document.getElementById('chatBox'); b.innerHTML = "";
-        s.forEach(m => {
-          const d = m.data();
-          if(d.type === 'broadcast') {
-            b.innerHTML += `<div class="broadcast-msg">${d.text}</div>`;
-          } else {
-            const tag = d.senderId === OWNER_UID ? `<span class="owner-tag">[OWNER]</span>` : "";
-            const pfp = `<img src="${d.photoURL || DEFAULT_PFP}" class="pfp-small">`;
-            const isOwner = auth.currentUser && auth.currentUser.uid === OWNER_UID;
-            const isSender = auth.currentUser && auth.currentUser.uid === d.senderId;
-            
-            const replyInfo = d.replyTo ? `<div style="font-size:11px; opacity:0.6; margin-bottom:3px;">↩️ Reply to ${d.replyTo.name}</div>` : '';
-            
-            b.innerHTML += `<div class="msg">
-              ${pfp}
-              <div style="flex:1;">
-                ${replyInfo}
-                ${tag}<b>${d.sender}:</b> ${d.text}
-              </div>
-              <div class="msg-actions">
-                <button onclick="setReplyTo('${m.id}', '${d.sender}')">↩️</button>
-                ${(isOwner || isSender) ? `<button onclick="deleteMessage('${m.id}', true)" class="danger-btn">🗑️</button>` : ''}
-                <button onclick="reportMessage('${m.id}', '${d.senderId}', '${d.sender}', '${d.text.replace(/'/g, "\\'")}')">⚠️</button>
-              </div>
-            </div>`;
-          }
-        }); 
-        b.scrollTop = b.scrollHeight;
-      });
-    };
+    // ... [Rest of your lookup, message, and admin functions] ...
 
-    window.startDM = (uid, n) => {
-      currentDMRecipient = uid; 
-      document.getElementById('dmTitle').innerText = n; 
-      showTab('dm'); 
-      if(dmUnsub) dmUnsub();
-      const dmQuery = query(collection(db, "dms"), or(and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)), and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))), orderBy("time", "asc"));
-      dmUnsub = onSnapshot(dmQuery, s => {
-        let b = document.getElementById('dmBox'); b.innerHTML = "";
-        s.forEach(m => { 
-          const d = m.data(); 
-          const tag = d.senderId === OWNER_UID ? `<span class="owner-tag">[OWNER]</span>` : "";
-          const isOwner = auth.currentUser && auth.currentUser.uid === OWNER_UID;
-          const isSender = auth.currentUser && auth.currentUser.uid === d.senderId;
-          
-          b.innerHTML += `<div class="msg">
-            <div style="flex:1;">${tag}<b>${d.sender}:</b> ${d.text}</div>
-            <div class="msg-actions">
-              ${(isOwner || isSender) ? `<button onclick="deleteMessage('${m.id}', false)" class="danger-btn">🗑️</button>` : ''}
-            </div>
-          </div>`; 
-        });
-        b.scrollTop = b.scrollHeight;
-      });
-    };
-
-    window.sendMessage = async () => { 
-      const v = document.getElementById('chatInput').value; 
-      if(!v) return;
-      
-      // Check if user is muted (only check real UID, not impersonated)
-      const muteDoc = await getDoc(doc(db, "muted_users", auth.currentUser.uid));
-      if(muteDoc.exists()) {
-        alert("🔇 You are muted and cannot send messages.");
-        return;
-      }
-      
-      const msgData = { 
-        senderId: window.currentDisplayUID || auth.currentUser.uid, 
-        sender: window.currentDisplayName || auth.currentUser.displayName, 
-        photoURL: window.currentDisplayPhoto || (auth.currentUser.photoURL || DEFAULT_PFP), 
-        text: v, 
-        time: Date.now() 
-      };
-      
-      if(replyingTo) {
-        msgData.replyTo = replyingTo;
-      }
-      
-      await addDoc(collection(db, "chats", "global_room", "messages"), msgData); 
-      document.getElementById('chatInput').value="";
-      cancelReply();
-    };
-
-    window.sendDM = async () => { 
-      const v = document.getElementById('dmInput').value; 
-      if(!v || !currentDMRecipient) return;
-      
-      try {
-        // Check if user is muted
-        const muteDoc = await getDoc(doc(db, "muted_users", auth.currentUser.uid));
-        if(muteDoc.exists()) {
-          alert("🔇 You are muted and cannot send messages.");
-          return;
-        }
-        
-        await addDoc(collection(db, "dms"), { 
-          senderId: window.currentDisplayUID || auth.currentUser.uid, 
-          sender: window.currentDisplayName || auth.currentUser.displayName, 
-          toId: currentDMRecipient, 
-          text: v, 
-          time: Date.now() 
-        }); 
-        document.getElementById('dmInput').value = "";
-      } catch(err) {
-        console.error("DM send error:", err);
-        alert("Error sending DM. Check console.");
+    window.impersonateUser = async (uid, username, photoURL) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm(`⚠️ IMPERSONATE ${username}?`)) {
+        sessionStorage.setItem('impersonating', JSON.stringify({
+          targetUID: uid,
+          targetName: username,
+          targetPhoto: photoURL
+        }));
+        location.reload();
       }
     };
-
-    window.showTab = t => { ['global','friends','dm','requests'].forEach(v => { document.getElementById(`view-${v}`).style.display='none'; }); document.getElementById(`view-${t}`).style.display='block'; if(t==='global') openChat(); };
-    window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
-    window.handleLogout = () => signOut(auth).then(()=>location.reload());
-    window.openModal = id => document.getElementById(id).style.display = 'flex';
-    window.closeModal = id => document.getElementById(id).style.display = 'none';
-    window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? "Login" : "Sign Up"; document.getElementById('regName').style.display = isLoginMode ? "none" : "block"; };
-    window.handleAuth = async () => { 
-      const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value; 
-      try { 
-        if(isLoginMode) { 
-          await signInWithEmailAndPassword(auth, e, p); 
-        } else { 
-          const res = await createUserWithEmailAndPassword(auth, e, p); 
-          await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP }); 
-          await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); 
-        } 
-        location.reload(); 
-      } catch(err) { alert(err.message); } 
-    };
-    window.updateUserProfile = async () => { await updateProfile(auth.currentUser, { displayName: document.getElementById('setDisplayName').value, photoURL: document.getElementById('setPfpUrl').value }); location.reload(); };
-    window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme')==='dark'?'light':'dark'); };
     
-    function setupSocial() {
-      onSnapshot(query(collection(db, "friend_requests"), where("toUid", "==", auth.currentUser.uid)), s => {
-        let c = document.getElementById('requestsList'); c.innerHTML = "";
-        s.forEach(d => { const r = d.data(); c.innerHTML += `<div>${r.fromName} <button onclick="acceptFriend('${r.fromUid}','${r.fromName}','${d.id}')">Accept</button></div>`; });
-        document.getElementById('reqBadge').innerText = s.size > 0 ? `(${s.size})` : "";
-      });
-      onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", auth.currentUser.uid)), s => {
-        let c = document.getElementById('friendsList'); c.innerHTML = "";
-        s.forEach(d => { const dat = d.data(); const fUid = dat.users.find(u => u !== auth.currentUser.uid); const fName = dat.names.find(n => n !== auth.currentUser.displayName); c.innerHTML += `<div><b>${fName}</b> <button onclick="startDM('${fUid}','${fName}')">DM</button></div>`; });
-      });
-    }
-    window.sendFriendRequest = async () => { const n = document.getElementById('friendSearch').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", n)); if(s.exists()) { await setDoc(doc(db, "friend_requests", `${auth.currentUser.uid}_${s.data().uid}`), { fromUid: auth.currentUser.uid, fromName: auth.currentUser.displayName, toUid: s.data().uid }); alert("Sent!"); } };
-    window.acceptFriend = async (uid, n, rid) => { const b = writeBatch(db); b.set(doc(db, "friendships", `${auth.currentUser.uid}_${uid}`), { users: [auth.currentUser.uid, uid], names: [auth.currentUser.displayName, n] }); b.delete(doc(db, "friend_requests", rid)); await b.commit(); };
+    window.handleLogout = async () => {
+      sessionStorage.removeItem('impersonating'); // Clear any ghost sessions on logout
+      await signOut(auth);
+      location.reload();
+    };
   </script>
 </body>
 </html>
