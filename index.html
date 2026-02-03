@@ -206,7 +206,8 @@
         <div id="userDetailBox" style="display:none; margin-top:20px; background:var(--card-bg); padding:20px; border-radius:12px; border:2px solid #ff9f1c;">
             <h3>User Details</h3>
             <div id="userDetailContent"></div>
-            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:15px;">
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:15px;">
+                <button onclick="syncUserData()" style="background:#4cc9f0; color:black;">Sync Data</button>
                 <button onclick="banUser()" style="background:#780000; color:white;">Ban User</button>
                 <button onclick="deleteUserAccount()" style="background:#000; color:white;">Delete Account</button>
                 <button onclick="forcePasswordReset()" style="background:#ff9f1c; color:black;">Force PW Reset</button>
@@ -459,6 +460,40 @@
       await setDoc(doc(db, "users", selectedUserUid), { forcePasswordReset: true }, { merge: true });
       await addDoc(collection(db, "logs"), { text: `Password reset forced for ${selectedUserUid}`, time: Date.now() });
       alert('User will be required to reset password on next login');
+    };
+
+    window.syncUserData = async () => {
+      if (!selectedUserUid) return;
+      
+      try {
+        // Get current user doc
+        const userDoc = await getDoc(doc(db, "users", selectedUserUid));
+        const existingData = userDoc.exists() ? userDoc.data() : {};
+        
+        // Populate missing fields with defaults
+        const updatedData = {
+          displayName: existingData.displayName || 'Unknown User',
+          email: existingData.email || '',
+          photoURL: existingData.photoURL || 'default-pfp.png',
+          createdAt: existingData.createdAt || Date.now(),
+          lastSeen: existingData.lastSeen || Date.now(),
+          messageCount: existingData.messageCount || 0,
+          banned: existingData.banned || false
+        };
+        
+        // Merge with existing data to keep fields like 'friends'
+        await setDoc(doc(db, "users", selectedUserUid), updatedData, { merge: true });
+        
+        await addDoc(collection(db, "logs"), { text: `User data synced for ${selectedUserUid}`, time: Date.now() });
+        alert('User data synchronized! Click the user again to refresh.');
+        
+        // Refresh the display
+        showUserDetail(selectedUserUid);
+        
+      } catch (error) {
+        console.error('Error syncing user data:', error);
+        alert('Error syncing data: ' + error.message);
+      }
     };
 
     // MODERATION
