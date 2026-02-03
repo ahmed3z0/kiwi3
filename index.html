@@ -19,7 +19,7 @@
     button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
     
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 400px; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
+    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 450px; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
     input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
 
     #chatBox { height: 300px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
@@ -33,6 +33,12 @@
     #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
     .nuke-btn { background: #780000; color: white; padding: 12px; border: none; width: 100%; margin-top: 10px; }
     .report-log { background: rgba(255,0,0,0.1); padding: 8px; border-radius: 5px; margin-bottom: 5px; font-size: 12px; border-left: 3px solid red; }
+
+    /* NEW STYLES */
+    .announcement-banner { background: #ff9f1c; color: #000; padding: 10px; font-weight: bold; text-align: center; border-radius: 6px; margin-bottom: 10px; display: none; font-size: 13px; }
+    .user-item { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+    .user-info { font-size: 12px; }
+    .admin-scroll { max-height: 200px; overflow-y: auto; margin-top: 10px; padding-right: 5px; }
   </style>
 </head>
 <body>
@@ -55,25 +61,35 @@
   </div>
 
   <div id="adminModal" class="modal-overlay">
-    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
-      <h2>Admin Control</h2>
-      <button class="nuke-btn" onclick="clearGlobalChat()">☢ CLEAR GLOBAL CHAT</button>
+    <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
+      <h2>Admin Control Center</h2>
       
-      <h4>User Reports</h4>
-      <div id="reportList">No new reports.</div>
+      <h4>📢 Broadcast Announcement</h4>
+      <div style="display:flex; gap:5px;">
+        <input type="text" id="announceInput" placeholder="System message..." style="flex:1;">
+        <button onclick="sendAnnouncement()" style="background:#4cc9f0; color:black;">Post</button>
+      </div>
+      <button onclick="clearAnnouncement()" style="font-size:10px; background:none; border:none; color:#888; margin-top:5px; cursor:pointer;">Clear Announcement</button>
 
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-      <h4>Shadow Ban</h4>
-      <div style="display:flex; gap:5px;">
-        <input type="text" id="banTarget" placeholder="Username" style="flex:1;">
-        <button onclick="handleBanUser()" style="background:#ff4d4d; color:white;">Ban</button>
-      </div>
+
+      <h4>👥 User Lookup & Manage</h4>
+      <div id="userDirectory" class="admin-scroll">Loading directory...</div>
+
+      <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+      
+      <h4>User Reports</h4>
+      <div id="reportList" class="admin-scroll">No new reports.</div>
+
+      <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+      <button class="nuke-btn" onclick="clearGlobalChat()">☢ CLEAR GLOBAL CHAT</button>
       <button onclick="closeModal('adminModal')" style="margin-top:15px;">Close</button>
     </div>
   </div>
 
   <div id="friendsModal" class="modal-overlay">
     <div class="modal-content">
+      <div id="systemAnnouncement" class="announcement-banner"></div>
       <h2>Global Chat</h2>
       <div id="chatBox"></div>
       <div style="display:flex; gap:5px; margin-top:10px;">
@@ -114,6 +130,7 @@
 
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
     let isShadowBanned = false;
+    let muteUntil = 0;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -122,14 +139,20 @@
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
 
+        // Check Ban/Mute Status
         const banDoc = await getDoc(doc(db, "banned_users", user.uid));
-        if (banDoc.exists()) isShadowBanned = true;
+        if (banDoc.exists()) {
+            isShadowBanned = banDoc.data().banned || false;
+            muteUntil = banDoc.data().muteUntil || 0;
+        }
 
         if(user.uid === OWNER_UID) {
           document.getElementById('adminBtn').style.display = 'block';
           listenToReports();
+          loadUserDirectory();
         }
         initChat();
+        listenToAnnouncements();
       } else {
         openModal('authModal');
       }
@@ -150,7 +173,6 @@
           
           const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
           
-          // Show Delete if it's mine OR if I am the Admin. Show Report only if it's NOT mine.
           let buttons = "";
           if (isMe || isOwner) {
             buttons += `<button class="msg-btn del-btn" onclick="deleteMessage('${mid}')">🗑️</button>`;
@@ -172,11 +194,73 @@
     window.sendMessage = async () => {
       const val = document.getElementById('chatInput').value;
       if (!val) return;
+      
+      if (Date.now() < muteUntil) {
+          const minsLeft = Math.ceil((muteUntil - Date.now()) / 60000);
+          alert(`You are muted for ${minsLeft} more minutes.`);
+          return;
+      }
+
       await addDoc(collection(db, "chats", "global_room", "messages"), {
         senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
         text: val, time: Date.now(), shadow: isShadowBanned
       });
       document.getElementById('chatInput').value = "";
+    };
+
+    // ANNOUNCEMENTS
+    window.sendAnnouncement = async () => {
+      const text = document.getElementById('announceInput').value;
+      if (!text) return;
+      await setDoc(doc(db, "settings", "broadcast"), { text, active: true });
+      document.getElementById('announceInput').value = "";
+    };
+
+    window.clearAnnouncement = async () => {
+      await setDoc(doc(db, "settings", "broadcast"), { active: false });
+    };
+
+    function listenToAnnouncements() {
+      onSnapshot(doc(db, "settings", "broadcast"), (d) => {
+        const banner = document.getElementById('systemAnnouncement');
+        if (d.exists() && d.data().active) {
+          banner.innerText = "📢 " + d.data().text;
+          banner.style.display = 'block';
+        } else {
+          banner.style.display = 'none';
+        }
+      });
+    }
+
+    // USER DIRECTORY
+    async function loadUserDirectory() {
+      const snap = await getDocs(collection(db, "usernames"));
+      const dir = document.getElementById('userDirectory');
+      dir.innerHTML = "";
+      snap.forEach(u => {
+        const data = u.data();
+        const name = u.id;
+        dir.innerHTML += `
+          <div class="user-item">
+            <span class="user-info"><b>${name}</b></span>
+            <div>
+              <button onclick="manageUser('${data.uid}', '${name}', 'mute')" style="font-size:9px; background:#ff9f1c; color:black; border:none; padding:3px;">Mute 1h</button>
+              <button onclick="manageUser('${data.uid}', '${name}', 'ban')" style="font-size:9px; background:#ff4d4d; color:white; border:none; padding:3px;">Ban</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    window.manageUser = async (uid, name, type) => {
+      if (type === 'ban') {
+        if(!confirm(`Shadow ban ${name}?`)) return;
+        await setDoc(doc(db, "banned_users", uid), { username: name, banned: true }, { merge: true });
+        alert(name + " shadow banned.");
+      } else if (type === 'mute') {
+        const until = Date.now() + (60 * 60 * 1000); // 1 Hour
+        await setDoc(doc(db, "banned_users", uid), { username: name, muteUntil: until }, { merge: true });
+        alert(name + " muted for 1 hour.");
+      }
     };
 
     window.deleteMessage = async (id) => {
@@ -206,15 +290,6 @@
         });
       });
     }
-
-    window.handleBanUser = async () => {
-      const username = document.getElementById('banTarget').value.toLowerCase().trim();
-      const userSnap = await getDoc(doc(db, "usernames", username));
-      if (userSnap.exists()) {
-        await setDoc(doc(db, "banned_users", userSnap.data().uid), { username, banned: true });
-        alert(username + " shadow banned.");
-      } else { alert("Not found."); }
-    };
 
     window.clearGlobalChat = async () => {
       if(!confirm("Wipe all messages?")) return;
