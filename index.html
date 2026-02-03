@@ -18,23 +18,21 @@
     .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; }
     button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
     
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 450px; display: flex; flex-direction: column; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; }
     input, textarea { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); font-family: inherit; }
 
-    #chatBox, #dmBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
-    .msg { margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid transparent; position: relative; }
-    .msg:hover { border-color: #444; }
+    #chatBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
+    .msg { margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
     .msg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
-    .msg-actions { display: flex; gap: 8px; margin-top: 8px; font-size: 10px; opacity: 0.6; }
-    .msg-actions span { cursor: pointer; text-decoration: underline; }
-    .msg-actions span:hover { color: #4cc9f0; opacity: 1; }
+    .msg-actions { display: flex; gap: 10px; margin-top: 8px; font-size: 11px; opacity: 0.6; }
+    .msg-actions span { cursor: pointer; color: #4cc9f0; }
     
     .quote-box { background: rgba(0,0,0,0.2); border-left: 3px solid #4cc9f0; padding: 5px 8px; margin-bottom: 8px; font-size: 12px; font-style: italic; color: #aaa; border-radius: 4px; }
-    .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #333; }
-    .owner-tag { background: #ff4d4d; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-right: 6px; text-transform: uppercase; }
+    .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .owner-tag { background: #ff4d4d; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-right: 6px; }
     
-    #replyPreview { display: none; background: #222; padding: 8px; font-size: 12px; border-radius: 6px 6px 0 0; border: 1px solid #333; border-bottom: none; }
+    #replyPreview { display: none; background: #1a1a1a; padding: 8px; font-size: 12px; border: 1px solid #333; border-bottom: none; border-radius: 6px 6px 0 0; }
   </style>
 </head>
 <body>
@@ -42,7 +40,7 @@
   <header>
     <div class="auth-buttons">
       <button onclick="toggleTheme()">Mode</button>
-      <button id="adminBtn" onclick="tryOpenAdmin()" style="display:none; background:#ff9f1c; color:black;">Admin</button>
+      <button id="adminBtn" onclick="openModal('adminModal')" style="display:none; background:#ff9f1c; color:black;">Admin Panel</button>
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
         <img id="navPfp" src="" class="pfp-small">
         <span id="userGreeting"></span>
@@ -53,7 +51,7 @@
     </div>
   </header>
 
-  <div class="content" style="text-align:center; padding-top:50px;">
+  <div style="text-align:center; padding-top:50px;">
     <h1>The Secret Kiwi Vault</h1>
     <img id="kiwiImage" src="kiwi.jpg" width="180" style="display:none; border-radius:15px;" />
   </div>
@@ -61,32 +59,51 @@
   <div id="friendsModal" class="modal-overlay">
     <div class="modal-content">
       <div style="display:flex; gap:5px; margin-bottom:10px;">
-        <button class="tab-btn" onclick="showTab('global')">Global</button>
-        <button class="tab-btn" onclick="showTab('friends')">Friends</button>
-        <button id="modTabBtn" class="tab-btn" style="display:none; background:#ff9f1c; color:black;" onclick="showTab('mod')">INTEL</button>
+        <button onclick="showTab('global')">Global Chat</button>
+        <button id="modTabBtn" style="display:none; background:#ff9f1c; color:black;" onclick="showTab('mod')">Surveillance</button>
       </div>
-
       <div id="view-global">
         <div id="chatBox"></div>
-        <div id="replyPreview">
-          <span id="replyPreviewText"></span> 
-          <span onclick="cancelReply()" style="float:right; cursor:pointer; color:red;">[X]</span>
-        </div>
-        <div style="display:flex; gap:5px; margin-top:0px;">
-          <input type="text" id="chatInput" placeholder="Message..." style="flex:1">
+        <div id="replyPreview"><span id="replyPreviewText"></span> <span onclick="cancelReply()" style="float:right; cursor:pointer; color:red;">[X]</span></div>
+        <div style="display:flex; gap:5px;">
+          <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
           <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
         </div>
       </div>
-      
-      <div id="view-friends" style="display:none;"><div id="friendsListContainer"></div></div>
-      <div id="view-mod" style="display:none;"><div id="modDMBox"></div></div>
-      <button onclick="closeModal('friendsModal')" style="margin-top:15px;">Close</button>
+      <div id="view-mod" style="display:none;"><h4>Mod Logs</h4><div id="modDMBox" style="height:300px; overflow-y:auto; font-size:11px;"></div></div>
+      <button onclick="closeModal('friendsModal')" style="margin-top:10px;">Close</button>
     </div>
   </div>
 
-  <div id="authModal" class="modal-overlay"><div class="modal-content" style="text-align:center;"><h2 id="authTitle">Vault</h2><input type="text" id="regName" placeholder="Username"><input type="email" id="authEmail" placeholder="Email"><input type="password" id="authPw" placeholder="Password"><button onclick="handleAuth()" id="authBtn">Access</button><span onclick="toggleAuthMode()" class="auth-link" id="authLink">Toggle Login/Sign-up</span></div></div>
-  <div id="settingsModal" class="modal-overlay"><div class="modal-content"><h2>Settings</h2><input type="text" id="setDisplayName" placeholder="Display Name"><input type="text" id="setPfpUrl" placeholder="PFP URL"><button onclick="updateUserProfile()">Save</button><button onclick="closeModal('settingsModal')">Cancel</button></div></div>
-  <div id="adminModal" class="modal-overlay"><div class="modal-content"><h2>Admin</h2><button onclick="clearGlobalChat()" style="background:red; color:white;">☢ WIPE CHAT</button><button onclick="closeModal('adminModal')">Close</button></div></div>
+  <div id="adminModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 style="color:#ff9f1c;">Admin Override</h2>
+      <p>System controls for the Vault Owner.</p>
+      <button onclick="clearGlobalChat()" style="background:#780000; color:white; padding:15px;">☢ WIPE ALL CHAT MESSAGES</button>
+      <button onclick="closeModal('adminModal')" style="margin-top:20px;">Close</button>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Profile Settings</h2>
+      <input type="text" id="setDisplayName" placeholder="Display Name">
+      <input type="text" id="setPfpUrl" placeholder="PFP URL">
+      <button onclick="updateUserProfile()" style="background:#4cc9f0; color:black;">Save Changes</button>
+      <button onclick="closeModal('settingsModal')">Cancel</button>
+    </div>
+  </div>
+
+  <div id="authModal" class="modal-overlay">
+    <div class="modal-content" style="text-align:center;">
+      <h2 id="authTitle">Vault Access</h2>
+      <input type="text" id="regName" placeholder="Username">
+      <input type="email" id="authEmail" placeholder="Email">
+      <input type="password" id="authPw" placeholder="Password">
+      <button id="authBtn" onclick="handleAuth()" style="background:#4cc9f0; color:black; width:100%;">Enter</button>
+      <span onclick="toggleAuthMode()" class="auth-link" id="authLink" style="cursor:pointer; color:#4cc9f0; font-size:12px; margin-top:10px; display:block;">Need an account? Sign Up</span>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -101,82 +118,108 @@
     const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/5029/5029253.png";
 
     let currentReply = null;
-    let isLoginMode = false;
+    let isLoginMode = true;
 
-    // --- REPLY & QUOTE LOGIC ---
-    window.replyMsg = (id, name, text) => {
+    // MODAL TRIGGERS
+    window.openModal = id => { document.getElementById(id).style.display = 'flex'; };
+    window.closeModal = id => { document.getElementById(id).style.display = 'none'; };
+
+    // AUTH LOGIC
+    window.toggleAuthMode = () => {
+      isLoginMode = !isLoginMode;
+      document.getElementById('authTitle').innerText = isLoginMode ? "Vault: Login" : "Vault: Sign Up";
+      document.getElementById('regName').style.display = isLoginMode ? "none" : "block";
+      document.getElementById('authLink').innerText = isLoginMode ? "Need an account? Sign Up" : "Have an account? Login";
+    };
+
+    window.handleAuth = async () => {
+      const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
+      try {
+        if(isLoginMode) { await signInWithEmailAndPassword(auth, e, p); }
+        else {
+          const res = await createUserWithEmailAndPassword(auth, e, p);
+          await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP });
+        }
+        location.reload();
+      } catch(err) { alert(err.message); }
+    };
+
+    // CHAT & REPLY
+    window.replyMsg = (name, text) => {
       currentReply = { name, text };
       document.getElementById('replyPreview').style.display = 'block';
-      document.getElementById('replyPreviewText').innerText = `Replying to ${name}: "${text.substring(0, 30)}..."`;
-      document.getElementById('chatInput').focus();
+      document.getElementById('replyPreviewText').innerText = `Replying to ${name}: "${text.substring(0, 20)}..."`;
     };
-
-    window.cancelReply = () => {
-      currentReply = null;
-      document.getElementById('replyPreview').style.display = 'none';
-    };
+    window.cancelReply = () => { currentReply = null; document.getElementById('replyPreview').style.display = 'none'; };
 
     window.sendMessage = async () => {
       const v = document.getElementById('chatInput').value;
       if (!v) return;
-      
-      const msgData = {
+      await addDoc(collection(db, "chats", "global_room", "messages"), {
         senderId: auth.currentUser.uid,
         sender: auth.currentUser.displayName,
         photoURL: auth.currentUser.photoURL || DEFAULT_PFP,
         text: v,
         time: Date.now(),
-        quote: currentReply // Attaches the quote if it exists
-      };
-
-      await addDoc(collection(db, "chats", "global_room", "messages"), msgData);
+        quote: currentReply
+      });
       document.getElementById('chatInput').value = "";
       cancelReply();
     };
 
-    // --- CHAT RENDERING ---
+    window.deleteMsg = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "chats", "global_room", "messages", id)); };
+    window.reportMsg = async (sus, txt) => { await addDoc(collection(db, "dms"), { sender: "🚩 REPORT", toId: OWNER_UID, text: `User ${auth.currentUser.displayName} reported ${sus}: ${txt}`, time: Date.now() }); alert("Reported."); };
+
+    // ADMIN ACTION
+    window.clearGlobalChat = async () => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm("WIPE EVERYTHING?")) {
+        const q = await getDocs(collection(db, "chats", "global_room", "messages"));
+        const b = writeBatch(db);
+        q.forEach(d => b.delete(d.ref));
+        await b.commit();
+        alert("Vault Cleared.");
+      }
+    };
+
+    // SYSTEM OBSERVERS
+    onAuthStateChanged(auth, u => {
+      if(u) {
+        document.getElementById('loggedInUI').style.display = 'flex';
+        document.getElementById('userGreeting').innerText = u.displayName;
+        document.getElementById('navPfp').src = u.photoURL || DEFAULT_PFP;
+        document.getElementById('kiwiImage').style.display = 'inline-block';
+        closeModal('authModal');
+        if(u.uid === OWNER_UID) { 
+          document.getElementById('adminBtn').style.display = 'block'; 
+          document.getElementById('modTabBtn').style.display = 'block';
+        }
+      } else { openModal('authModal'); }
+    });
+
     window.openChat = () => {
       onSnapshot(query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc")), s => {
-        let b = document.getElementById('chatBox');
-        b.innerHTML = "";
+        let b = document.getElementById('chatBox'); b.innerHTML = "";
         s.forEach(m => {
           const d = m.data();
-          const isMe = d.senderId === auth.currentUser.uid || auth.currentUser.uid === OWNER_UID;
-          
-          let quoteHtml = d.quote ? `<div class="quote-box"><b>@${d.quote.name}:</b> ${d.quote.text}</div>` : "";
-          
-          b.innerHTML += `
-            <div class="msg">
-              ${quoteHtml}
-              <div class="msg-header">
-                <img src="${d.photoURL || DEFAULT_PFP}" class="pfp-small">
-                <b>${d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : ''}${d.sender}</b>
-              </div>
-              <div>${d.text}</div>
-              <div class="msg-actions">
-                <span onclick="replyMsg('${m.id}','${d.sender}','${d.text}')">Reply</span>
-                <span onclick="reportMsg('${d.sender}','${d.text}')">Report</span>
-                ${isMe ? `<span style="color:#ff4d4d" onclick="deleteMsg('${m.id}')">Delete</span>` : ''}
-              </div>
-            </div>`;
+          const isOwner = d.senderId === OWNER_UID;
+          const canDelete = d.senderId === auth.currentUser.uid || auth.currentUser.uid === OWNER_UID;
+          let q = d.quote ? `<div class="quote-box"><b>@${d.quote.name}:</b> ${d.quote.text}</div>` : "";
+          b.innerHTML += `<div class="msg">${q}<div class="msg-header"><img src="${d.photoURL}" class="pfp-small"><b>${isOwner?'<span class="owner-tag">Owner</span>':''}${d.sender}</b></div><div>${d.text}</div><div class="msg-actions"><span onclick="replyMsg('${d.sender}','${d.text}')">Reply</span><span onclick="reportMsg('${d.sender}','${d.text}')">Report</span>${canDelete?`<span style="color:red" onclick="deleteMsg('${m.id}')">Delete</span>`:''}</div></div>`;
         });
         b.scrollTop = b.scrollHeight;
       });
     };
 
-    // --- HELPERS ---
-    window.deleteMsg = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "chats", "global_room", "messages", id)); };
-    window.reportMsg = async (sus, txt) => { await addDoc(collection(db, "dms"), { sender: "🚩 REPORT", toId: OWNER_UID, text: `Report on ${sus}: ${txt}`, time: Date.now(), isAlert: true }); alert("Reported."); };
-    window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? "Login" : "Sign Up"; document.getElementById('regName').style.display = isLoginMode ? "none" : "block"; };
-    window.handleAuth = async () => { /* Standard Firebase auth logic as used before */ };
-    window.handleLogout = () => signOut(auth).then(()=>location.reload());
-    window.openModal = id => document.getElementById(id).style.display='flex';
-    window.closeModal = id => document.getElementById(id).style.display='none';
-    window.showTab = t => { ['global','friends','mod'].forEach(v => document.getElementById(`view-${v}`).style.display='none'); document.getElementById(`view-${t}`).style.display='block'; if(t==='global') openChat(); };
+    window.showTab = t => {
+      document.getElementById('view-global').style.display = t === 'global' ? 'block' : 'none';
+      document.getElementById('view-mod').style.display = t === 'mod' ? 'block' : 'none';
+      if(t === 'global') openChat();
+    };
+
     window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
-    onAuthStateChanged(auth, u => { if(u) { document.getElementById('loggedInUI').style.display='flex'; document.getElementById('userGreeting').innerText=u.displayName; document.getElementById('navPfp').src=u.photoURL||DEFAULT_PFP; document.getElementById('kiwiImage').style.display='inline-block'; closeModal('authModal'); if(u.uid===OWNER_UID) document.getElementById('adminBtn').style.display='block'; } else { openModal('authModal'); }});
+    window.handleLogout = () => signOut(auth).then(()=>location.reload());
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme')==='dark'?'light':'dark'); };
-    window.tryOpenAdmin = () => { if(auth.currentUser.uid === OWNER_UID) openModal('adminModal'); };
   </script>
 </body>
 </html>
