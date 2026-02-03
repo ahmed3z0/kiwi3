@@ -13,32 +13,37 @@
       --card-bg: #ffffff; --input-bg: #f5f6f7; --btn-bg: #e4e6eb; --border-color: #ddd;
     }
 
-    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
+    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; transition: 0.3s; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
     header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; }
-    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
+    .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; position: relative; }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; transition: 0.2s; }
+    button:hover { opacity: 0.8; }
     
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 450px; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 550px; display: flex; flex-direction: column; border: 1px solid var(--border-color); max-height: 90vh; }
     input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
 
-    #chatBox { height: 300px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
-    .msg { margin-bottom: 12px; font-size: 14px; position: relative; border-bottom: 1px solid #333; padding-bottom: 5px; }
-    .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
-    
+    /* CHAT STYLES */
+    #chatBox { flex-grow: 1; min-height: 350px; overflow-y: auto; background: var(--input-bg); padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 10px; }
+    .msg { margin-bottom: 12px; font-size: 14px; position: relative; border-bottom: 1px solid #333; padding-bottom: 8px; line-height: 1.4; }
+    .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; border: 1px solid #ff4d4d; padding: 1px 4px; border-radius: 3px; }
     .msg-btn { font-size: 10px; background: none; border: 1px solid; padding: 2px 6px; border-radius: 4px; cursor: pointer; float: right; margin-left: 5px; }
     .report-btn { color: #ff9f1c; border-color: #ff9f1c; }
     .del-btn { color: #ff4d4d; border-color: #ff4d4d; }
-    
-    #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
-    .nuke-btn { background: #780000; color: white; padding: 12px; border: none; width: 100%; margin-top: 10px; }
-    .report-log { background: rgba(255,0,0,0.1); padding: 8px; border-radius: 5px; margin-bottom: 5px; font-size: 12px; border-left: 3px solid red; }
 
-    .announcement-banner { background: #ff9f1c; color: #000; padding: 10px; font-weight: bold; text-align: center; border-radius: 6px; margin-bottom: 10px; display: none; font-size: 13px; }
-    .user-item { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
-    .admin-scroll { max-height: 200px; overflow-y: auto; margin-top: 10px; padding-right: 5px; border: 1px solid #444; border-radius: 4px; padding: 5px; }
-    
-    .search-bar { width: 100%; padding: 8px; font-size: 12px; border-radius: 4px; border: 1px solid #444; background: #111; color: white; margin-bottom: 5px; }
+    /* ADMIN SPECIFIC */
+    #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
+    .admin-scroll { flex-grow: 1; min-height: 150px; overflow-y: auto; margin: 10px 0; padding: 10px; border: 1px solid #444; border-radius: 6px; background: rgba(0,0,0,0.2); }
+    .user-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+    .nuke-btn { background: #780000; color: white; padding: 12px; border: none; width: 100%; margin-top: 10px; font-weight: bold; border-radius: 6px; }
+
+    /* DROPDOWN MENU */
+    .dropdown { display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 101; min-width: 150px; margin-top: 5px; }
+    .dropdown button { width: 100%; text-align: left; background: none; border: none; padding: 12px 15px; border-radius: 0; border-bottom: 1px solid var(--border-color); }
+    .dropdown button:last-child { border-bottom: none; }
+    .dropdown button:hover { background: rgba(255,255,255,0.1); }
+
+    .announcement-banner { background: #ff9f1c; color: #000; padding: 12px; font-weight: bold; text-align: center; border-radius: 6px; margin-bottom: 15px; display: none; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -48,66 +53,73 @@
       <button onclick="toggleTheme()">Mode</button>
       <button id="adminBtn" onclick="openModal('adminModal')">Admin Panel</button>
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
-        <span id="userGreeting"></span>
-        <button onclick="openModal('friendsModal')">Social</button>
-        <button onclick="handleLogout()" style="background:#780000; color:white;">Logout</button>
+        <span id="userGreeting" style="font-weight: bold;"></span>
+        
+        <div style="position:relative;">
+          <button onclick="toggleDropdown()">Social ▾</button>
+          <div id="socialDropdown" class="dropdown">
+            <button onclick="openModal('friendsModal'); toggleDropdown();">Global Chat</button>
+            <button onclick="alert('Friends list coming soon!'); toggleDropdown();">Friends List</button>
+          </div>
+        </div>
+
+        <button onclick="handleLogout()" style="background:#780000; color:white; border:none;">Logout</button>
       </div>
     </div>
   </header>
 
-  <div class="content" style="text-align:center; padding-top:40px;">
-    <h1>The Secret Kiwi Vault</h1>
-    <img id="kiwiImage" src="kiwi.jpg" width="200" style="display:none; border-radius:15px;" />
+  <div class="content" style="text-align:center; padding-top:60px;">
+    <h1 style="font-size: 3rem; margin-bottom: 20px;">The Secret Kiwi Vault</h1>
+    <img id="kiwiImage" src="kiwi.jpg" width="250" style="display:none; border-radius:20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
   </div>
 
   <div id="adminModal" class="modal-overlay">
-    <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
-      <h2>Admin Control Center</h2>
+    <div class="modal-content" style="width: 650px; height: 85vh;">
+      <h2 style="margin-top:0;">🛡️ Admin Command Center</h2>
       
-      <h4>📢 Broadcast Announcement</h4>
-      <div style="display:flex; gap:5px;">
-        <input type="text" id="announceInput" placeholder="System message..." style="flex:1;">
-        <button onclick="sendAnnouncement()" style="background:#4cc9f0; color:black;">Post</button>
+      <div style="background: rgba(255,159,28,0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #ff9f1c;">
+        <h4 style="margin:0 0 10px 0;">📢 Broadcast Announcement</h4>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="announceInput" placeholder="Enter system-wide message..." style="flex:1; margin:0;">
+          <button onclick="sendAnnouncement()" style="background:#4cc9f0; color:black; border:none;">Post</button>
+        </div>
+        <button onclick="clearAnnouncement()" style="font-size:11px; background:none; border:none; color:#888; margin-top:8px; cursor:pointer;">× Remove Active Announcement</button>
       </div>
-      <button onclick="clearAnnouncement()" style="font-size:10px; background:none; border:none; color:#888; margin-top:5px; cursor:pointer;">Clear Announcement</button>
 
-      <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-
-      <h4>👥 User Directory</h4>
-      <input type="text" id="userSearch" class="search-bar" placeholder="Search usernames..." onkeyup="filterUsers()">
+      <h4 style="margin: 20px 0 5px 0;">👥 User Management</h4>
+      <input type="text" id="userSearch" style="margin:0 0 10px 0;" placeholder="Search for a user..." onkeyup="filterUsers()">
       <div id="userDirectory" class="admin-scroll">Loading directory...</div>
 
-      <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-      
-      <h4>🚩 User Reports</h4>
-      <div id="reportList" class="admin-scroll">No new reports.</div>
+      <h4 style="margin: 10px 0 5px 0;">🚩 Recent Reports</h4>
+      <div id="reportList" class="admin-scroll">No active reports.</div>
 
-      <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-      <button class="nuke-btn" onclick="clearGlobalChat()">☢ CLEAR GLOBAL CHAT</button>
-      <button onclick="closeModal('adminModal')" style="margin-top:15px;">Close</button>
+      <div style="margin-top: auto;">
+        <button class="nuke-btn" onclick="clearGlobalChat()">☢ WIPE GLOBAL CHAT HISTORY</button>
+        <button onclick="closeModal('adminModal')" style="width:100%; margin-top:10px; background:#444;">Exit Admin Panel</button>
+      </div>
     </div>
   </div>
 
   <div id="friendsModal" class="modal-overlay">
-    <div class="modal-content" style="width: 500px;">
+    <div class="modal-content" style="width: 600px; height: 80vh;">
       <div id="systemAnnouncement" class="announcement-banner"></div>
-      <h2>Global Chat</h2>
+      <h2 style="margin-top:0;">🌍 Global Chat</h2>
       <div id="chatBox"></div>
-      <div style="display:flex; gap:5px; margin-top:10px;">
-        <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
-        <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="chatInput" placeholder="Whisper something..." style="flex:1; margin:0;">
+        <button onclick="sendMessage()" style="background:#4cc9f0; color:black; border:none; padding:0 25px;">Send</button>
       </div>
-      <button onclick="closeModal('friendsModal')" style="margin-top:10px; border:none; background:none; color:#888;">Close</button>
+      <button onclick="closeModal('friendsModal')" style="margin-top:15px; background:none; border:none; color:#777;">Close Window</button>
     </div>
   </div>
 
   <div id="authModal" class="modal-overlay">
     <div class="modal-content">
       <h2 id="authTitle">Vault Login</h2>
-      <input type="text" id="regName" placeholder="Username">
-      <input type="email" id="authEmail" placeholder="Email">
+      <input type="text" id="regName" placeholder="Desired Username">
+      <input type="email" id="authEmail" placeholder="Email Address">
       <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Access Vault</button>
+      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:15px; font-size:16px;">Initialize Access</button>
     </div>
   </div>
 
@@ -132,6 +144,11 @@
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
     let isShadowBanned = false;
     let muteUntil = 0;
+
+    window.toggleDropdown = () => {
+        const dd = document.getElementById('socialDropdown');
+        dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+    };
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -171,7 +188,7 @@
 
           if (d.shadow && !isMe && !isOwner) return;
           
-          const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
+          const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">OWNER</span>' : '';
           let buttons = "";
           if (isMe || isOwner) { buttons += `<button class="msg-btn del-btn" onclick="deleteMessage('${mid}')">🗑️</button>`; }
           if (!isMe) { buttons += `<button class="msg-btn report-btn" onclick="reportUser('${mid}', '${d.sender}', '${d.text}')">🚩</button>`; }
@@ -191,7 +208,7 @@
       if (!val || !auth.currentUser) return;
       if (Date.now() < muteUntil) {
           const minsLeft = Math.ceil((muteUntil - Date.now()) / 60000);
-          alert(`You are muted for ${minsLeft} more minutes.`);
+          alert(`Muted! ${minsLeft}m remaining.`);
           return;
       }
       await addDoc(collection(db, "chats", "global_room", "messages"), {
@@ -216,7 +233,7 @@
       onSnapshot(doc(db, "settings", "broadcast"), (d) => {
         const banner = document.getElementById('systemAnnouncement');
         if (d.exists() && d.data().active) {
-          banner.innerText = "📢 " + d.data().text;
+          banner.innerText = "📢 SYSTEM: " + d.data().text;
           banner.style.display = 'block';
         } else { banner.style.display = 'none'; }
       });
@@ -233,8 +250,8 @@
           <div class="user-item" data-name="${name.toLowerCase()}">
             <span><b>${name}</b></span>
             <div>
-              <button onclick="manageUser('${data.uid}', '${name}', 'mute')" style="font-size:9px; background:#ff9f1c; color:black; border:none; padding:3px; cursor:pointer;">Mute 1h</button>
-              <button onclick="manageUser('${data.uid}', '${name}', 'ban')" style="font-size:9px; background:#ff4d4d; color:white; border:none; padding:3px; cursor:pointer;">Ban</button>
+              <button onclick="manageUser('${data.uid}', '${name}', 'mute')" style="font-size:10px; background:#ff9f1c; color:black; border:none; margin-right:5px;">Mute 1h</button>
+              <button onclick="manageUser('${data.uid}', '${name}', 'ban')" style="font-size:10px; background:#ff4d4d; color:white; border:none;">Ban</button>
             </div>
           </div>`;
       });
@@ -252,16 +269,16 @@
       if (type === 'ban') {
         if(!confirm(`Shadow ban ${name}?`)) return;
         await setDoc(doc(db, "banned_users", uid), { username: name, banned: true }, { merge: true });
-        alert(name + " shadow banned.");
+        alert("Banned.");
       } else if (type === 'mute') {
         const until = Date.now() + (60 * 60 * 1000);
         await setDoc(doc(db, "banned_users", uid), { username: name, muteUntil: until }, { merge: true });
-        alert(name + " muted for 1 hour.");
+        alert("Muted.");
       }
     };
 
     window.deleteMessage = async (id) => {
-      if(confirm("Delete this message?")) { await deleteDoc(doc(db, "chats", "global_room", "messages", id)); }
+      if(confirm("Delete?")) { await deleteDoc(doc(db, "chats", "global_room", "messages", id)); }
     };
 
     window.reportUser = async (msgId, offenderName, text) => {
@@ -278,13 +295,13 @@
         list.innerHTML = "";
         snap.forEach(d => {
           const r = d.data();
-          list.innerHTML += `<div class="report-log"><b>${r.reporter}</b> reported <b>${r.offender}</b>: "${r.message}"</div>`;
+          list.innerHTML += `<div class="report-log" style="padding:10px; border-bottom:1px solid #444; font-size:13px;"><b>${r.reporter}</b> -> <b>${r.offender}</b>: ${r.message}</div>`;
         });
       });
     }
 
     window.clearGlobalChat = async () => {
-      if(!confirm("Wipe all messages?")) return;
+      if(!confirm("WIPE EVERYTHING?")) return;
       const q = await getDocs(collection(db, "chats", "global_room", "messages"));
       const batch = writeBatch(db);
       q.forEach(d => batch.delete(d.ref));
@@ -302,14 +319,8 @@
     };
 
     window.handleLogout = () => signOut(auth).then(() => location.reload());
-    window.openModal = (id) => { 
-        const el = document.getElementById(id);
-        if(el) el.style.display = 'flex'; 
-    };
-    window.closeModal = (id) => { 
-        const el = document.getElementById(id);
-        if(el) el.style.display = 'none'; 
-    };
+    window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; };
+    window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
   </script>
 </body>
