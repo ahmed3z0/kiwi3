@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <title>The Secret Kiwi Vault</title>
+  <title>The Secret Kiwi Vault - Master</title>
   <style>
     :root[data-theme="dark"] {
       --bg-color: #121212; --text-color: #ffffff; --header-bg: #0d1b2a;
@@ -15,64 +15,46 @@
       --accent: #3a86ff;
     }
 
-    /* THEMES */
+    /* THEME VARIANTS */
     .theme-classic { --msg-bg: #2a2a2a; --msg-text: #fff; --chat-accent: #4cc9f0; }
     .theme-neon { --msg-bg: #000; --msg-text: #39ff14; --chat-accent: #39ff14; --chat-glow: 0 0 15px #39ff14; }
     .theme-sunset { --msg-bg: #4a1e1e; --msg-text: #ffbe0b; --chat-accent: #fb5607; }
     .theme-matrix { --msg-bg: #001a00; --msg-text: #00ff41; --chat-accent: #008f11; font-family: 'Courier New', monospace; }
 
-    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; transition: 0.3s; }
     header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 12px; }
     
     .pfp-circle { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); cursor: pointer; }
-    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; border: none; }
+    button:hover { filter: brightness(1.2); }
+    input { padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); outline: none; }
 
-    /* OWNER TAG STYLE */
-    .owner-tag {
-        background: #ff0000;
-        color: white;
-        font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 4px;
-        margin-left: 5px;
-        vertical-align: middle;
-        font-weight: 800;
-        text-transform: uppercase;
-        box-shadow: 0 0 5px rgba(255,0,0,0.5);
-    }
+    /* OWNER TAG */
+    .owner-tag { background: #ff0000; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; font-weight: 800; text-transform: uppercase; }
 
-    /* IMPERSONATING TAG */
-    .impersonating-banner {
-        background: #ff6b35;
-        color: white;
-        padding: 8px;
-        text-align: center;
-        font-weight: bold;
-        position: sticky;
-        top: 0;
-        z-index: 60;
-        box-shadow: 0 2px 10px rgba(255,107,53,0.5);
-    }
-
+    /* MODAL SYSTEM */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 480px; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; }
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 500px; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; max-height: 90vh; overflow-y: auto; }
     .close-x { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #888; }
 
-    #chatBox { height: 380px; overflow-y: auto; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin: 10px 0; box-shadow: var(--chat-glow); }
-    .msg { margin-bottom: 12px; padding: 10px; border-radius: 8px; background: var(--msg-bg, #2a2a2a); color: var(--msg-text, #fff); border-left: 4px solid var(--chat-accent, #4cc9f0); font-size: 14px; }
-    input { padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); }
+    /* CHAT COMPONENTS */
+    #chatBox { height: 400px; overflow-y: auto; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin: 10px 0; box-shadow: var(--chat-glow); }
+    .msg { margin-bottom: 12px; padding: 10px; border-radius: 8px; background: var(--msg-bg, #2a2a2a); color: var(--msg-text, #fff); border-left: 4px solid var(--chat-accent, #4cc9f0); }
+    
+    /* ADMIN LISTS */
+    .admin-list-item { padding: 12px; margin-bottom: 8px; background: #121212; border-radius: 8px; cursor: pointer; border: 1px solid #333; }
+    .admin-list-item:hover { border-color: var(--accent); }
   </style>
 </head>
 <body class="theme-classic">
 
-  <div id="impersonatingBanner" class="impersonating-banner" style="display:none;"></div>
   <div id="broadcastBanner" style="width:100%; background:#ff9f1c; color:#000; padding:10px; text-align:center; font-weight:bold; display:none; position: sticky; top: 0; z-index: 50;"></div>
 
   <header>
     <div class="auth-buttons">
       <button onclick="toggleTheme()">Mode</button>
-      <button id="adminBtn" style="display:none; background:#ff9f1c; color:black;" onclick="openModal('adminModal')">Admin Panel</button>
+      <button id="adminBtn" style="display:none; background:#ff9f1c; color:black;" onclick="openModal('adminModal')">Admin Control</button>
       <div id="loggedInUI" style="display:none; align-items: center; gap:12px;">
         <span id="userGreeting" style="font-weight:bold;"></span>
         <img id="navPfp" class="pfp-circle" onclick="openModal('settingsModal')" src="default-pfp.png">
@@ -83,15 +65,51 @@
     </div>
   </header>
 
-  <div style="text-align:center; padding-top:50px;">
+  <div style="text-align:center; padding-top:40px;">
     <h1>The Secret Kiwi Vault</h1>
-    <img id="kiwiImage" src="kiwi.jpg" width="180" style="display:none; border-radius:20px;">
+    <img id="kiwiImage" src="kiwi.jpg" width="150" style="display:none; border-radius:20px;">
+  </div>
+
+  <div id="adminModal" class="modal-overlay">
+    <div class="modal-content" style="width:90%; max-width:1100px;">
+      <span class="close-x" onclick="closeModal('adminModal')">&times;</span>
+      <h2 style="color:#ff9f1c;">🛡️ Admin Dashboard</h2>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div>
+          <h3>User Directory</h3>
+          <input type="text" id="userSearchInput" placeholder="Search users..." style="width:100%; margin-bottom:10px;" oninput="searchUsers()">
+          <div id="userListBox" style="height:350px; overflow-y:auto; background:var(--input-bg); border-radius:8px; padding:10px;"></div>
+        </div>
+        <div>
+          <h3>Broadcast & Cleanup</h3>
+          <input type="text" id="announceMsg" placeholder="Global message..." style="width:100%; margin-bottom:10px;">
+          <button onclick="sendBroadcast()" style="background:#28a745; color:white; width:100%;">Start Broadcast</button>
+          <button onclick="removeBroadcast()" style="background:#444; color:white; width:100%; margin-top:5px;">Stop Broadcast</button>
+          <hr style="margin:20px 0; border-color:#333;">
+          <button onclick="clearChatRoom()" style="background:#780000; color:white; width:100%; padding:15px;">☢ CLEAR GLOBAL CHAT</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="userDetailModal" class="modal-overlay" style="z-index: 120;">
+    <div class="modal-content" style="border: 2px solid var(--accent); width: 400px;">
+      <span class="close-x" onclick="closeModal('userDetailModal')">&times;</span>
+      <h3>User Profile Control</h3>
+      <div id="userDetailContent" style="background:var(--input-bg); padding:15px; border-radius:8px; line-height:1.6; font-size:14px;"></div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+        <button onclick="syncUserData()" style="background:#4cc9f0; color:black;">Sync Data</button>
+        <button onclick="banUser()" style="background:#780000; color:white;">Ban User</button>
+        <button onclick="deleteUserAccount()" style="background:#000; color:white;">Delete Account</button>
+        <button onclick="closeModal('userDetailModal')">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="themeModal" class="modal-overlay">
     <div class="modal-content">
       <span class="close-x" onclick="closeModal('themeModal')">&times;</span>
-      <h2>Chat Themes</h2>
+      <h2>Select Interface Style</h2>
       <button onclick="setChatTheme('theme-classic')" style="margin-bottom:10px;">Classic Vault</button>
       <button onclick="setChatTheme('theme-neon')" style="margin-bottom:10px;">Neon Toxicity</button>
       <button onclick="setChatTheme('theme-sunset')" style="margin-bottom:10px;">Sunset Haze</button>
@@ -99,147 +117,39 @@
     </div>
   </div>
 
-  <div id="settingsModal" class="modal-overlay">
-    <div class="modal-content">
-      <span class="close-x" onclick="closeModal('settingsModal')">&times;</span>
-      <h2>User Settings</h2>
-      <label>Display Name:</label>
-      <input type="text" id="nameInput" placeholder="New Name">
-      <button onclick="updateDisplayName()" style="background:#28a745; color:white; margin-top:5px;">Update Name</button>
-      <label style="margin-top:15px; display:block;">PFP URL:</label>
-      <input type="text" id="pfpInput" placeholder="Image link...">
-      <button onclick="updatePfp()" style="background:var(--accent); color:black; margin-top:5px;">Update Photo</button>
-    </div>
-  </div>
-
-  <div id="adminModal" class="modal-overlay">
-     <div class="modal-content" style="width:1200px; max-width:95vw; max-height:95vh; overflow-y:auto;">
-        <span class="close-x" onclick="closeModal('adminModal')">&times;</span>
-        <h1 style="color:#ff9f1c;">🛡️ Admin Dashboard</h1>
-        
-        <!-- Analytics Dashboard -->
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-top:20px;">
-            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #28a745;">
-                <div style="font-size:32px; font-weight:bold; color:#28a745;" id="totalUsers">0</div>
-                <div style="font-size:12px; color:#888;">Total Users</div>
-            </div>
-            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #4cc9f0;">
-                <div style="font-size:32px; font-weight:bold; color:#4cc9f0;" id="activeUsers">0</div>
-                <div style="font-size:12px; color:#888;">Active Now</div>
-            </div>
-            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #ff9f1c;">
-                <div style="font-size:32px; font-weight:bold; color:#ff9f1c;" id="totalMessages">0</div>
-                <div style="font-size:12px; color:#888;">Total Messages</div>
-            </div>
-            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #fb5607;">
-                <div style="font-size:32px; font-weight:bold; color:#fb5607;" id="messagesWeek">0</div>
-                <div style="font-size:12px; color:#888;">Messages This Week</div>
-            </div>
-        </div>
-
-        <!-- System Controls -->
-        <div style="background:var(--card-bg); padding:20px; border-radius:12px; margin-top:20px;">
-            <h3>⚙️ System Controls</h3>
-            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;">
-                <button onclick="toggleRegistration()" id="regToggleBtn" style="background:#28a745; color:white;">🔓 Registration Enabled</button>
-                <button onclick="toggleMaintenance()" id="maintenanceBtn" style="background:#780000; color:white;">🚧 Maintenance Mode OFF</button>
-                <button onclick="backupDatabase()" style="background:#3a86ff; color:white;">💾 Backup Database</button>
-                <button onclick="exportLogs()" style="background:#ff9f1c; color:black;">📊 Export Logs</button>
-            </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px;">
-            <!-- User Management -->
-            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
-                <h3>👥 User Management</h3>
-                <input type="text" id="userSearchInput" placeholder="Search users..." style="width:100%; margin-bottom:10px;" oninput="searchUsers()">
-                <div id="userListBox" style="height:300px; overflow-y:auto; background:var(--input-bg); padding:10px; border-radius:8px; font-size:13px;"></div>
-            </div>
-
-            <!-- Live Logs -->
-            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
-                <h3>📋 Live Logs</h3>
-                <div id="logBox" style="height:300px; background:#000; color:#0f0; padding:10px; overflow-y:auto; font-family:monospace; font-size:12px;"></div>
-            </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px;">
-            <!-- Moderation -->
-            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
-                <h3>🛡️ Moderation</h3>
-                <input type="text" id="muteUserInput" placeholder="Username to mute..." style="width:100%; margin-bottom:5px;">
-                <input type="number" id="muteDuration" placeholder="Minutes (0 = permanent)" style="width:100%; margin-bottom:10px;">
-                <button onclick="muteUser()" style="background:#ff6b35; color:white; width:100%; margin-bottom:10px;">Mute User</button>
-                <button onclick="clearChatRoom()" style="background:#780000; color:white; width:100%;">Clear Global Chat</button>
-                <div style="margin-top:15px;">
-                    <h4 style="font-size:14px;">Muted Users:</h4>
-                    <div id="mutedListBox" style="height:120px; overflow-y:auto; background:var(--input-bg); padding:10px; border-radius:8px; font-size:12px;"></div>
-                </div>
-            </div>
-
-            <!-- Broadcast & Announcements -->
-            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
-                <h3>📢 Broadcast</h3>
-                <input type="text" id="announceMsg" placeholder="Broadcast message..." style="width:100%; margin-bottom:10px;">
-                <button onclick="sendBroadcast()" style="background:#28a745; color:white; width:100%; margin-bottom:5px;">Start Broadcast</button>
-                <button onclick="removeBroadcast()" style="background:#780000; color:white; width:100%; margin-bottom:15px;">Stop Broadcast</button>
-                
-                <h4 style="font-size:14px; margin-top:15px;">System Message</h4>
-                <input type="text" id="systemMsgInput" placeholder="Message as SYSTEM..." style="width:100%; margin-bottom:5px;">
-                <button onclick="sendSystemMessage()" style="background:#4cc9f0; color:black; width:100%;">Send to Global Chat</button>
-            </div>
-        </div>
-
-        <!-- Account Impersonation -->
-        <div style="background:var(--card-bg); padding:20px; border-radius:12px; margin-top:20px;">
-            <h3>🎭 Account Impersonation</h3>
-            <p style="font-size:12px; color:#888; margin-bottom:10px;">Sign in as any user temporarily. Your admin account will be restored when you return.</p>
-            <div style="display:grid; grid-template-columns: 1fr auto auto; gap:10px;">
-                <input type="text" id="impersonateTarget" placeholder="Enter username...">
-                <button onclick="impersonateUser()" style="background:#ff6b35; color:white;">Sign In As User</button>
-                <button id="returnToAdminBtn" onclick="returnToAdmin()" style="background:#4cc9f0; color:black; display:none;">Return to Admin</button>
-            </div>
-            <div id="impersonateStatus" style="margin-top:10px; font-size:13px;"></div>
-        </div>
-
-        <!-- User Detail Modal (appears when clicking a user) -->
-        <div id="userDetailBox" style="display:none; margin-top:20px; background:var(--card-bg); padding:20px; border-radius:12px; border:2px solid #ff9f1c;">
-            <h3>User Details</h3>
-            <div id="userDetailContent"></div>
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:15px;">
-                <button onclick="syncUserData()" style="background:#4cc9f0; color:black;">Sync Data</button>
-                <button onclick="banUser()" style="background:#780000; color:white;">Ban User</button>
-                <button onclick="deleteUserAccount()" style="background:#000; color:white;">Delete Account</button>
-                <button onclick="forcePasswordReset()" style="background:#ff9f1c; color:black;">Force PW Reset</button>
-            </div>
-        </div>
-     </div>
-  </div>
-  </div>
-
   <div id="socialNavModal" class="modal-overlay">
     <div class="modal-content">
       <span class="close-x" onclick="closeModal('socialNavModal')">&times;</span>
-      <button onclick="openChat('global_room', 'Global Chat'); closeModal('socialNavModal');" style="margin-bottom:10px; padding:15px; width:100%;">🌍 Global Chat</button>
-      <button onclick="closeModal('socialNavModal'); openFriendsList();" style="padding:15px; width:100%;">👥 Friends & DMs</button>
+      <button onclick="openChat('global_room', 'Global Chat'); closeModal('socialNavModal');" style="margin-bottom:10px; padding:20px; font-size:1.1rem;">🌍 GLOBAL VAULT</button>
+      <button disabled style="opacity:0.5; padding:20px;">👥 FRIENDS (COMING SOON)</button>
     </div>
   </div>
 
   <div id="chatModal" class="modal-overlay">
-    <div class="modal-content" style="width:550px;">
+    <div class="modal-content" style="width:600px;">
       <span class="close-x" onclick="closeModal('chatModal')">&times;</span>
-      <h3 id="chatTitle">Chat</h3>
+      <h3 id="chatTitle">Global Chat</h3>
       <div id="chatBox"></div>
-      <div style="display:flex; gap:5px;"><input type="text" id="chatInput" style="flex:1;"><button onclick="sendMessage()" style="background:var(--accent); color:black;">Send</button></div>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="chatInput" placeholder="Type a message..." style="flex:1;" onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()" style="background:var(--accent); color:black;">SEND</button>
+      </div>
     </div>
   </div>
 
-  <div id="authModal" class="modal-overlay"><div class="modal-content"><h2>Vault Access</h2><input type="email" id="authEmail" placeholder="Email"><input type="password" id="authPw" placeholder="Password"><button onclick="handleAuth()">Enter</button></div></div>
+  <div id="authModal" class="modal-overlay">
+    <div class="modal-content" style="width:350px;">
+      <h2>Vault Access</h2>
+      <input type="email" id="authEmail" placeholder="Email" style="margin-bottom:10px;">
+      <input type="password" id="authPw" placeholder="Password" style="margin-bottom:15px;">
+      <button onclick="handleAuth()" style="background:var(--accent); color:black;">ENTER VAULT</button>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, updateProfile, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -254,387 +164,30 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
-    let activeChatId = "global_room", chatUnsubscribe = null;
-    let originalAdminData = null; // Store admin data when impersonating
-    let selectedUserUid = null; // For user detail view
-    let allUsers = []; // Cache all users
+    
+    let activeChatId = "global_room", chatUnsub = null, allUsers = [], selectedUserUid = null;
 
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
       if (user) {
-        try {
-          // Create/update user document in Firestore
-          const userDocRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          console.log('User logged in:', user.uid);
-          console.log('User email:', user.email);
-          console.log('User displayName:', user.displayName);
-          console.log('User doc exists:', userDoc.exists());
-          
-          if (!userDoc.exists()) {
-            // Create new user document
-            const newUserData = {
-              displayName: user.displayName || user.email?.split('@')[0] || 'User',
-              email: user.email || '',
-              photoURL: user.photoURL || 'default-pfp.png',
-              createdAt: Date.now(),
-              lastSeen: Date.now(),
-              messageCount: 0,
-              banned: false
-            };
-            console.log('Creating new user document:', newUserData);
-            await setDoc(userDocRef, newUserData);
-            console.log('User document created successfully!');
-          } else {
-            // Update last seen
-            await setDoc(userDocRef, { lastSeen: Date.now() }, { merge: true });
-            console.log('Updated last seen for existing user');
-          }
-        } catch (error) {
-          console.error('Error creating/updating user document:', error);
-          alert('Error saving user data: ' + error.message);
-        }
-        
         document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('userGreeting').innerText = user.displayName || user.email || 'User';
+        document.getElementById('userGreeting').innerText = user.displayName || user.email.split('@')[0];
         document.getElementById('navPfp').src = user.photoURL || 'default-pfp.png';
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
         
-        // Check if we're impersonating
-        const impersonating = sessionStorage.getItem('impersonating');
-        if (impersonating === 'true') {
-          const targetName = sessionStorage.getItem('impersonateTargetName');
-          showImpersonatingBanner(targetName);
-          document.getElementById('returnToAdminBtn').style.display = 'block';
-        }
-        
         if(user.uid === OWNER_UID) { 
           document.getElementById('adminBtn').style.display = 'block'; 
-          listenToLogs();
-          loadAnalytics();
-          loadAllUsers();
-          listenToMutedUsers();
+          loadAdminData(); 
         }
         listenToBroadcast();
-        updateUserActivity(user.uid);
-      } else { 
-        openModal('authModal'); 
-      }
+      } else { openModal('authModal'); }
     });
 
-    // ANALYTICS
-    async function loadAnalytics() {
-      // Total users
-      const usersSnap = await getDoc(doc(db, "analytics", "userCount"));
-      if (usersSnap.exists()) {
-        document.getElementById('totalUsers').innerText = usersSnap.data().count || 0;
-      }
-
-      // Total messages
-      const msgsSnap = await getDoc(doc(db, "analytics", "messageCount"));
-      if (msgsSnap.exists()) {
-        document.getElementById('totalMessages').innerText = msgsSnap.data().count || 0;
-      }
-
-      // Messages this week
-      const weekSnap = await getDoc(doc(db, "analytics", "weeklyMessages"));
-      if (weekSnap.exists()) {
-        document.getElementById('messagesWeek').innerText = weekSnap.data().count || 0;
-      }
-
-      // Active users (users active in last 5 minutes)
-      onSnapshot(collection(db, "activeUsers"), (snap) => {
-        const now = Date.now();
-        let activeCount = 0;
-        snap.forEach(doc => {
-          if (now - doc.data().lastSeen < 300000) activeCount++;
-        });
-        document.getElementById('activeUsers').innerText = activeCount;
-      });
-    }
-
-    async function updateUserActivity(uid) {
-      await setDoc(doc(db, "activeUsers", uid), { lastSeen: Date.now() }, { merge: true });
-    }
-
-    // USER MANAGEMENT
-    async function loadAllUsers() {
-      onSnapshot(collection(db, "users"), (snap) => {
-        allUsers = [];
-        snap.forEach(doc => {
-          allUsers.push({ uid: doc.id, ...doc.data() });
-        });
-        displayUsers(allUsers);
-      });
-    }
-
-    function displayUsers(users) {
-      const box = document.getElementById('userListBox');
-      box.innerHTML = '';
-      users.forEach(user => {
-        const banned = user.banned ? ' <span style="color:#ff0000;">[BANNED]</span>' : '';
-        box.innerHTML += `
-          <div style="padding:8px; margin:5px 0; background:var(--card-bg); border-radius:6px; cursor:pointer; border:1px solid var(--border-color);" onclick="showUserDetail('${user.uid}')">
-            <b>${user.displayName || 'Unknown'}</b>${banned}<br>
-            <span style="font-size:11px; color:#888;">${user.email || 'No email'} | UID: ${user.uid}</span>
-          </div>
-        `;
-      });
-    }
-
-    window.searchUsers = () => {
-      const query = document.getElementById('userSearchInput').value.toLowerCase();
-      const filtered = allUsers.filter(u => 
-        (u.displayName || '').toLowerCase().includes(query) || 
-        (u.email || '').toLowerCase().includes(query) ||
-        u.uid.includes(query)
-      );
-      displayUsers(filtered);
-    };
-
-    window.showUserDetail = async (uid) => {
-      selectedUserUid = uid;
-      
-      console.log('Fetching user details for UID:', uid);
-      
-      // Fetch fresh data from Firestore
-      const userDoc = await getDoc(doc(db, "users", uid));
-      
-      console.log('User doc exists:', userDoc.exists());
-      if (userDoc.exists()) {
-        console.log('User data:', userDoc.data());
-      }
-      
-      const detailBox = document.getElementById('userDetailBox');
-      const content = document.getElementById('userDetailContent');
-      
-      if (!userDoc.exists()) {
-        // User document doesn't exist yet - try to get from auth
-        content.innerHTML = `
-          <div style="display:grid; grid-template-columns: auto 1fr; gap:10px; font-size:14px;">
-            <b>UID:</b><span>${uid}</span>
-            <b>Status:</b><span style="color:#ff9f1c;">⚠️ User document not created yet. They need to log in once.</span>
-          </div>
-        `;
-        detailBox.style.display = 'block';
-        return;
-      }
-      
-      const data = userDoc.data();
-      
-      content.innerHTML = `
-        <div style="display:grid; grid-template-columns: auto 1fr; gap:10px; font-size:14px;">
-          <b>Display Name:</b><span>${data.displayName || 'N/A'}</span>
-          <b>Email:</b><span>${data.email || 'N/A'}</span>
-          <b>UID:</b><span>${uid}</span>
-          <b>Created:</b><span>${data.createdAt ? new Date(data.createdAt).toLocaleString() : 'N/A'}</span>
-          <b>Last Active:</b><span>${data.lastSeen ? new Date(data.lastSeen).toLocaleString() : 'N/A'}</span>
-          <b>Messages Sent:</b><span>${data.messageCount || 0}</span>
-          <b>Status:</b><span>${data.banned ? '<span style="color:#ff0000;">BANNED</span>' : '<span style="color:#28a745;">Active</span>'}</span>
-        </div>
-      `;
-      detailBox.style.display = 'block';
-    };
-
-    window.banUser = async () => {
-      if (!selectedUserUid) return;
-      if (!confirm('Ban this user?')) return;
-      await setDoc(doc(db, "users", selectedUserUid), { banned: true }, { merge: true });
-      await addDoc(collection(db, "logs"), { text: `User ${selectedUserUid} was banned`, time: Date.now() });
-      alert('User banned');
-      document.getElementById('userDetailBox').style.display = 'none';
-    };
-
-    window.deleteUserAccount = async () => {
-      if (!selectedUserUid) return;
-      if (!confirm('DELETE this user account permanently? This cannot be undone!')) return;
-      await setDoc(doc(db, "users", selectedUserUid), { deleted: true, deletedAt: Date.now() }, { merge: true });
-      await addDoc(collection(db, "logs"), { text: `User ${selectedUserUid} was deleted`, time: Date.now() });
-      alert('User account marked as deleted');
-      document.getElementById('userDetailBox').style.display = 'none';
-    };
-
-    window.forcePasswordReset = async () => {
-      if (!selectedUserUid) return;
-      await setDoc(doc(db, "users", selectedUserUid), { forcePasswordReset: true }, { merge: true });
-      await addDoc(collection(db, "logs"), { text: `Password reset forced for ${selectedUserUid}`, time: Date.now() });
-      alert('User will be required to reset password on next login');
-    };
-
-    window.syncUserData = async () => {
-      if (!selectedUserUid) return;
-      
-      try {
-        // Get current user doc
-        const userDoc = await getDoc(doc(db, "users", selectedUserUid));
-        const existingData = userDoc.exists() ? userDoc.data() : {};
-        
-        // Populate missing fields with defaults
-        const updatedData = {
-          displayName: existingData.displayName || 'Unknown User',
-          email: existingData.email || '',
-          photoURL: existingData.photoURL || 'default-pfp.png',
-          createdAt: existingData.createdAt || Date.now(),
-          lastSeen: existingData.lastSeen || Date.now(),
-          messageCount: existingData.messageCount || 0,
-          banned: existingData.banned || false
-        };
-        
-        // Merge with existing data to keep fields like 'friends'
-        await setDoc(doc(db, "users", selectedUserUid), updatedData, { merge: true });
-        
-        await addDoc(collection(db, "logs"), { text: `User data synced for ${selectedUserUid}`, time: Date.now() });
-        alert('User data synchronized! Click the user again to refresh.');
-        
-        // Refresh the display
-        showUserDetail(selectedUserUid);
-        
-      } catch (error) {
-        console.error('Error syncing user data:', error);
-        alert('Error syncing data: ' + error.message);
-      }
-    };
-
-    // MODERATION
-    window.muteUser = async () => {
-      const username = document.getElementById('muteUserInput').value.trim();
-      const duration = parseInt(document.getElementById('muteDuration').value) || 0;
-      if (!username) return alert('Enter a username');
-      
-      // Find user by username
-      const user = allUsers.find(u => u.displayName && u.displayName.toLowerCase() === username.toLowerCase());
-      if (!user) return alert('User not found');
-      
-      const until = duration === 0 ? 'permanent' : Date.now() + (duration * 60000);
-      await setDoc(doc(db, "mutedUsers", user.uid), { until, mutedAt: Date.now(), username: user.displayName });
-      await addDoc(collection(db, "logs"), { text: `User ${user.displayName} (${user.uid}) muted until ${until}`, time: Date.now() });
-      alert('User muted');
-      document.getElementById('muteUserInput').value = '';
-    };
-
-    function listenToMutedUsers() {
-      onSnapshot(collection(db, "mutedUsers"), (snap) => {
-        const box = document.getElementById('mutedListBox');
-        box.innerHTML = '';
-        snap.forEach(async (docSnap) => {
-          const data = docSnap.data();
-          const until = data.until === 'permanent' ? 'Permanent' : new Date(data.until).toLocaleString();
-          
-          // Get username from stored data or look it up
-          let displayName = data.username || 'Unknown';
-          if (!data.username) {
-            const userDoc = await getDoc(doc(db, "users", docSnap.id));
-            if (userDoc.exists()) displayName = userDoc.data().displayName || 'Unknown';
-          }
-          
-          box.innerHTML += `<div>${displayName} - Until: ${until} <button onclick="unmuteByUid('${docSnap.id}')" style="font-size:10px; padding:2px 6px;">Unmute</button></div>`;
-        });
-      });
-    }
-
-    window.unmuteByUid = async (uid) => {
-      await deleteDoc(doc(db, "mutedUsers", uid));
-      await addDoc(collection(db, "logs"), { text: `User ${uid} unmuted`, time: Date.now() });
-    };
-
-    window.clearChatRoom = async () => {
-      if (!confirm('Clear all messages in Global Chat?')) return;
-      const snap = await getDocs(collection(db, "chats", "global_room", "messages"));
-      snap.forEach(async (d) => await deleteDoc(d.ref));
-      await addDoc(collection(db, "logs"), { text: 'Global chat cleared', time: Date.now() });
-      alert('Chat cleared');
-    };
-
-    window.sendSystemMessage = async () => {
-      const msg = document.getElementById('systemMsgInput').value;
-      if (!msg) return;
-      await addDoc(collection(db, "chats", "global_room", "messages"), {
-        sender: "SYSTEM",
-        senderId: "SYSTEM",
-        text: msg,
-        time: Date.now()
-      });
-      document.getElementById('systemMsgInput').value = '';
-      await addDoc(collection(db, "logs"), { text: `System message sent: ${msg}`, time: Date.now() });
-    };
-
-    // SYSTEM CONTROLS
-    window.toggleRegistration = async () => {
-      const settingsDoc = await getDoc(doc(db, "settings", "registration"));
-      const currentState = settingsDoc.exists() ? settingsDoc.data().enabled : true;
-      await setDoc(doc(db, "settings", "registration"), { enabled: !currentState });
-      const btn = document.getElementById('regToggleBtn');
-      if (currentState) {
-        btn.innerText = '🔒 Registration Disabled';
-        btn.style.background = '#780000';
-      } else {
-        btn.innerText = '🔓 Registration Enabled';
-        btn.style.background = '#28a745';
-      }
-      await addDoc(collection(db, "logs"), { text: `Registration ${!currentState ? 'enabled' : 'disabled'}`, time: Date.now() });
-    };
-
-    window.toggleMaintenance = async () => {
-      const settingsDoc = await getDoc(doc(db, "settings", "maintenance"));
-      const currentState = settingsDoc.exists() ? settingsDoc.data().active : false;
-      await setDoc(doc(db, "settings", "maintenance"), { active: !currentState });
-      const btn = document.getElementById('maintenanceBtn');
-      if (!currentState) {
-        btn.innerText = '🚧 Maintenance Mode ON';
-        btn.style.background = '#ff9f1c';
-      } else {
-        btn.innerText = '🚧 Maintenance Mode OFF';
-        btn.style.background = '#780000';
-      }
-      await addDoc(collection(db, "logs"), { text: `Maintenance mode ${!currentState ? 'ON' : 'OFF'}`, time: Date.now() });
-    };
-
-    window.backupDatabase = async () => {
-      alert('Database backup initiated. This is a simulated function - implement real backup logic on backend.');
-      await addDoc(collection(db, "logs"), { text: 'Database backup initiated', time: Date.now() });
-    };
-
-    window.exportLogs = async () => {
-      const logsSnap = await getDocs(query(collection(db, "logs"), orderBy("time", "desc"), limit(1000)));
-      let logText = 'VAULT LOGS EXPORT\n\n';
-      logsSnap.forEach(doc => {
-        const d = doc.data();
-        logText += `[${new Date(d.time).toLocaleString()}] ${d.text}\n`;
-      });
-      const blob = new Blob([logText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `vault-logs-${Date.now()}.txt`;
-      a.click();
-    };
-
-    window.setChatTheme = (t) => { document.body.className = t; localStorage.setItem('v-theme', t); closeModal('themeModal'); };
-    const st = localStorage.getItem('v-theme'); if(st) document.body.className = st;
-
-    window.sendMessage = async () => {
-      const v = document.getElementById('chatInput').value; if(!v) return;
-      await addDoc(collection(db, "chats", activeChatId, "messages"), { 
-        sender: auth.currentUser.displayName, 
-        senderId: auth.currentUser.uid,
-        text: v, 
-        time: Date.now() 
-      });
-      
-      // Increment user's message count
-      const userRef = doc(db, "users", auth.currentUser.uid);
-      const userDoc = await getDoc(userRef);
-      const currentCount = userDoc.exists() ? (userDoc.data().messageCount || 0) : 0;
-      await setDoc(userRef, { messageCount: currentCount + 1 }, { merge: true });
-      
-      document.getElementById('chatInput').value = "";
-    };
-
+    // CHAT SYSTEM
     window.openChat = (id, title) => {
       activeChatId = id; document.getElementById('chatTitle').innerText = title; openModal('chatModal');
-      if (chatUnsubscribe) chatUnsubscribe();
-      chatUnsubscribe = onSnapshot(query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc")), (snap) => {
+      if (chatUnsub) chatUnsub();
+      chatUnsub = onSnapshot(query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc")), (snap) => {
         const box = document.getElementById('chatBox'); box.innerHTML = "";
         snap.forEach(m => {
           const d = m.data();
@@ -645,114 +198,80 @@
       });
     };
 
-    // IMPERSONATION FUNCTIONS
-    window.impersonateUser = async () => {
-      const username = document.getElementById('impersonateTarget').value.trim();
-      const statusDiv = document.getElementById('impersonateStatus');
-      
-      if (!username) {
-        statusDiv.innerHTML = '<span style="color:#ff6b35;">⚠️ Please enter a username</span>';
-        return;
-      }
-
-      try {
-        // Find user by username
-        const user = allUsers.find(u => u.displayName && u.displayName.toLowerCase() === username.toLowerCase());
-        
-        if (!user) {
-          statusDiv.innerHTML = '<span style="color:#ff6b35;">⚠️ User not found</span>';
-          return;
-        }
-
-        const targetUid = user.uid;
-        const userData = user;
-        
-        // Save current admin data
-        originalAdminData = {
-          displayName: auth.currentUser.displayName,
-          photoURL: auth.currentUser.photoURL,
-          uid: auth.currentUser.uid
-        };
-        sessionStorage.setItem('adminData', JSON.stringify(originalAdminData));
-        
-        // Update current profile to match target user
-        await updateProfile(auth.currentUser, {
-          displayName: userData.displayName || 'Unknown User',
-          photoURL: userData.photoURL || 'default-pfp.png'
-        });
-
-        // Mark that we're impersonating
-        sessionStorage.setItem('impersonating', 'true');
-        sessionStorage.setItem('impersonateTargetUid', targetUid);
-        sessionStorage.setItem('impersonateTargetName', userData.displayName || 'Unknown User');
-        
-        statusDiv.innerHTML = '<span style="color:#28a745;">✅ Successfully signed in as ' + userData.displayName + '</span>';
-        
-        // Reload to apply changes
-        setTimeout(() => location.reload(), 1000);
-        
-      } catch (error) {
-        statusDiv.innerHTML = '<span style="color:#ff6b35;">⚠️ Error: ' + error.message + '</span>';
-      }
+    window.sendMessage = async () => {
+      const v = document.getElementById('chatInput').value; if(!v) return;
+      await addDoc(collection(db, "chats", activeChatId, "messages"), { 
+        sender: auth.currentUser.displayName || auth.currentUser.email.split('@')[0], 
+        senderId: auth.currentUser.uid,
+        text: v, time: Date.now() 
+      });
+      document.getElementById('chatInput').value = "";
     };
 
-    window.returnToAdmin = async () => {
-      const adminDataStr = sessionStorage.getItem('adminData');
-      
-      if (!adminDataStr) {
-        alert('Error: Admin data not found');
-        return;
-      }
-
-      try {
-        const adminData = JSON.parse(adminDataStr);
-        
-        // Restore admin profile
-        await updateProfile(auth.currentUser, {
-          displayName: adminData.displayName,
-          photoURL: adminData.photoURL
-        });
-
-        // Clear impersonation flags
-        sessionStorage.removeItem('impersonating');
-        sessionStorage.removeItem('impersonateTargetUid');
-        sessionStorage.removeItem('impersonateTargetName');
-        sessionStorage.removeItem('adminData');
-        
-        // Reload to return to admin view
-        location.reload();
-        
-      } catch (error) {
-        alert('Error returning to admin: ' + error.message);
-      }
-    };
-
-    function showImpersonatingBanner(targetName) {
-      const banner = document.getElementById('impersonatingBanner');
-      banner.innerHTML = `🎭 IMPERSONATING: ${targetName} | <span style="cursor:pointer; text-decoration:underline;" onclick="returnToAdmin()">Return to Admin</span>`;
-      banner.style.display = 'block';
+    // ADMIN DIRECTORY LOGIC
+    async function loadAdminData() {
+      onSnapshot(collection(db, "users"), (snap) => {
+        allUsers = [];
+        snap.forEach(d => allUsers.push({uid: d.id, ...d.data()}));
+        searchUsers();
+      });
     }
 
-    // LOGS & ADMIN
-    function listenToLogs() { onSnapshot(query(collection(db, "logs"), orderBy("time", "desc"), limit(20)), (s) => {
-        const b = document.getElementById('logBox'); b.innerHTML = "";
-        s.forEach(d => { b.innerHTML += `<div>[${new Date(d.data().time).toLocaleTimeString()}] ${d.data().text}</div>`; });
-    });}
-    window.sendBroadcast = async () => { await setDoc(doc(db, "settings", "broadcast"), { text: document.getElementById('announceMsg').value, active: true }); };
-    window.removeBroadcast = async () => { await setDoc(doc(db, "settings", "broadcast"), { active: false }); };
-    function listenToBroadcast() { onSnapshot(doc(db, "settings", "broadcast"), (d) => {
-        const b = document.getElementById('broadcastBanner');
-        if(d.exists() && d.data().active) { b.innerText = "📢 " + d.data().text; b.style.display='block'; } else b.style.display='none';
-    });}
+    window.searchUsers = () => {
+      const term = document.getElementById('userSearchInput').value.toLowerCase();
+      const box = document.getElementById('userListBox');
+      box.innerHTML = '';
+      allUsers.filter(u => (u.displayName||'').toLowerCase().includes(term) || u.uid.includes(term)).forEach(user => {
+        const div = document.createElement('div');
+        div.className = 'admin-list-item';
+        div.onclick = () => showUserDetail(user.uid);
+        div.innerHTML = `<strong>${user.displayName || 'Unknown'}</strong><br><small>${user.uid}</small>`;
+        box.appendChild(div);
+      });
+    };
 
+    window.showUserDetail = async (uid) => {
+      selectedUserUid = uid;
+      const content = document.getElementById('userDetailContent');
+      content.innerHTML = "Fetching...";
+      openModal('userDetailModal');
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (!userDoc.exists()) {
+        content.innerHTML = `<strong>UID:</strong> ${uid}<br><span style="color:orange">No Firestore document found. Click SYNC.</span>`;
+      } else {
+        const d = userDoc.data();
+        content.innerHTML = `<b>Name:</b> ${d.displayName}<br><b>Email:</b> ${d.email}<br><b>UID:</b> ${uid}<br><b>Messages:</b> ${d.messageCount || 0}<br><b>Status:</b> ${d.banned ? 'BANNED' : 'Active'}`;
+      }
+    };
+
+    window.syncUserData = async () => {
+        await setDoc(doc(db, "users", selectedUserUid), { displayName: "User", lastSeen: Date.now(), banned: false, messageCount: 0 }, { merge: true });
+        alert("Synced!"); showUserDetail(selectedUserUid);
+    };
+
+    window.clearChatRoom = async () => {
+      if (!confirm('Destroy all messages in Global Chat?')) return;
+      const snap = await getDocs(collection(db, "chats", "global_room", "messages"));
+      snap.forEach(async (d) => await deleteDoc(d.ref));
+    };
+
+    // UTILS
+    window.setChatTheme = (t) => { document.body.className = t; localStorage.setItem('v-theme', t); closeModal('themeModal'); };
+    const st = localStorage.getItem('v-theme'); if(st) document.body.className = st;
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeModal = (id) => document.getElementById(id).style.display = 'none';
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
     window.handleLogout = () => signOut(auth).then(() => location.reload());
     window.handleAuth = async () => {
         const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value;
-        await signInWithEmailAndPassword(auth, e, p).then(() => location.reload());
+        await signInWithEmailAndPassword(auth, e, p).then(() => location.reload()).catch(err => alert(err.message));
     };
+    window.sendBroadcast = async () => { await setDoc(doc(db, "settings", "broadcast"), { text: document.getElementById('announceMsg').value, active: true }); };
+    window.removeBroadcast = async () => { await setDoc(doc(db, "settings", "broadcast"), { active: false }); };
+    function listenToBroadcast() { onSnapshot(doc(db, "settings", "broadcast"), (d) => {
+        const b = document.getElementById('broadcastBanner');
+        if(d.exists() && d.data().active) { b.innerText = "📢 " + d.data().text; b.style.display='block'; } else b.style.display='none';
+    });}
   </script>
 </body>
 </html>
