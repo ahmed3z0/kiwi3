@@ -2,147 +2,104 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <title>The Secret Kiwi Vault - Master</title>
+  <title>The Secret Kiwi Vault</title>
   <style>
     :root[data-theme="dark"] {
       --bg-color: #121212; --text-color: #ffffff; --header-bg: #0d1b2a;
       --card-bg: #1e1e1e; --input-bg: #2a2a2a; --btn-bg: #1b263b; --border-color: #333;
-      --accent: #4cc9f0;
     }
     :root[data-theme="light"] {
       --bg-color: #f0f2f5; --text-color: #1c1e21; --header-bg: #ffffff;
       --card-bg: #ffffff; --input-bg: #f5f6f7; --btn-bg: #e4e6eb; --border-color: #ddd;
-      --accent: #3a86ff;
     }
 
-    /* THEMES */
-    .theme-classic { --msg-bg: #2a2a2a; --msg-text: #fff; --chat-accent: #4cc9f0; }
-    .theme-neon { --msg-bg: #000; --msg-text: #39ff14; --chat-accent: #39ff14; --chat-glow: 0 0 15px #39ff14; }
-    .theme-sunset { --msg-bg: #4a1e1e; --msg-text: #ffbe0b; --chat-accent: #fb5607; }
-    .theme-matrix { --msg-bg: #001a00; --msg-text: #00ff41; --chat-accent: #008f11; font-family: 'Courier New', monospace; }
-
-    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-    header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 10; }
-    .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 12px; }
+    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
+    header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
     
-    .pfp-circle { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); cursor: pointer; }
-    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; border: none; }
-    button:hover { filter: brightness(1.2); }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 380px; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
+    input { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
 
-    .owner-tag { background: #ff0000; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; font-weight: 800; text-transform: uppercase; }
-
-    /* MODAL FIX: Added background-color explicitly to stop the "blackout" issue */
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background-color: var(--card-bg) !important; color: var(--text-color); padding: 25px; border-radius: 12px; width: 480px; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; max-height: 90vh; overflow-y: auto; }
-    .close-x { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #888; }
-
-    #chatBox { height: 380px; overflow-y: auto; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin: 10px 0; }
-    .msg { margin-bottom: 12px; padding: 10px; border-radius: 8px; background: var(--msg-bg, #2a2a2a); color: var(--msg-text, #fff); border-left: 4px solid var(--chat-accent, #4cc9f0); font-size: 14px; }
-    input { padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); }
+    #chatBox { height: 300px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
+    .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; }
+    .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
+    .voice-msg { display: block; margin-top: 5px; height: 35px; width: 100%; }
+    .recording-active { background: #ff4d4d !important; animation: pulse 1s infinite; }
     
-    .impersonating-banner { background: #ff6b35; color: white; padding: 8px; text-align: center; font-weight: bold; width: 100%; display: none; }
+    #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
+    .nuke-btn { background: #780000; color: white; padding: 12px; margin-top: 10px; border: none; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
   </style>
 </head>
-<body class="theme-classic">
-
-  <div id="impersonatingBanner" class="impersonating-banner">
-    🎭 IMPERSONATING: <span id="targetNameDisplay"></span>
-    <button onclick="returnToAdmin()" style="background:white; color:black; margin-left:15px; padding:3px 8px; font-size:11px;">EXIT</button>
-  </div>
-  
-  <div id="broadcastBanner" style="width:100%; background:#ff9f1c; color:#000; padding:10px; text-align:center; font-weight:bold; display:none;"></div>
+<body>
 
   <header>
     <div class="auth-buttons">
-      <button onclick="toggleTheme()">Mode</button>
-      <button id="adminBtn" style="display:none; background:#ff9f1c; color:black;" onclick="openModal('adminModal')">Admin Panel</button>
-      <div id="loggedInUI" style="display:none; align-items: center; gap:12px;">
-        <span id="userGreeting" style="font-weight:bold;"></span>
-        <img id="navPfp" class="pfp-circle" onclick="openModal('settingsModal')" src="default-pfp.png">
-        <button onclick="openModal('themeModal')" style="background:var(--accent); color:black;">Themes</button>
-        <button onclick="openModal('socialNavModal')">Social</button>
+      <button onclick="toggleTheme()" id="themeBtn">Mode</button>
+      <button id="adminBtn" onclick="openModal('adminModal')">Admin Panel</button>
+      <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
+        <span id="userGreeting"></span>
+        <button onclick="openModal('friendsModal')">Social</button>
         <button onclick="handleLogout()" style="background:#780000; color:white;">Logout</button>
       </div>
     </div>
   </header>
 
-  <div style="text-align:center; padding-top:50px;">
+  <div class="content" style="text-align:center; padding-top:50px;">
     <h1>The Secret Kiwi Vault</h1>
-    <img id="kiwiImage" src="kiwi.jpg" width="180" style="display:none; border-radius:20px;">
-  </div>
-
-  <div id="themeModal" class="modal-overlay">
-    <div class="modal-content">
-      <span class="close-x" onclick="closeModal('themeModal')">&times;</span>
-      <h2 style="margin-top:0;">Chat Themes</h2>
-      <button onclick="setChatTheme('theme-classic')" style="margin-bottom:10px;">Classic Vault</button>
-      <button onclick="setChatTheme('theme-neon')" style="margin-bottom:10px;">Neon Toxicity</button>
-      <button onclick="setChatTheme('theme-sunset')" style="margin-bottom:10px;">Sunset Haze</button>
-      <button onclick="setChatTheme('theme-matrix')">The Matrix</button>
-    </div>
-  </div>
-
-  <div id="socialNavModal" class="modal-overlay">
-    <div class="modal-content">
-      <span class="close-x" onclick="closeModal('socialNavModal')">&times;</span>
-      <h2 style="margin-top:0;">Social</h2>
-      <button onclick="openChat('global_room', 'Global Chat'); closeModal('socialNavModal');" style="margin-bottom:10px; padding:15px; width:100%;">🌍 Global Chat</button>
-      <button disabled style="opacity:0.5; padding:15px; width:100%;">👥 Friends (Locked)</button>
-    </div>
+    <img id="kiwiImage" src="kiwi.jpg" width="250" style="display:none; border-radius:15px;" />
   </div>
 
   <div id="adminModal" class="modal-overlay">
-     <div class="modal-content" style="width:1000px; max-width:95vw;">
-        <span class="close-x" onclick="closeModal('adminModal')">&times;</span>
-        <h2 style="color:#ff9f1c; margin-top:0;">🛡️ Admin Dashboard</h2>
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div style="background:var(--input-bg); padding:15px; border-radius:12px;">
-                <h3>👥 User Directory</h3>
-                <input type="text" id="userSearchInput" placeholder="Search..." style="width:95%; margin-bottom:10px;" oninput="searchUsers()">
-                <div id="userListBox" style="height:250px; overflow-y:auto;"></div>
-                
-                <div id="userDetailBox" style="display:none; margin-top:15px; padding:10px; border:1px solid var(--accent); border-radius:8px;">
-                    <div id="userDetailContent"></div>
-                    <div style="display:flex; gap:5px; margin-top:10px;">
-                        <button onclick="syncUserData()" style="background:#28a745; color:white; flex:1;">Sync Name</button>
-                        <button onclick="impersonateUserFromDetail()" style="background:#ff6b35; color:white; flex:1;">Impersonate</button>
-                    </div>
-                </div>
-            </div>
-
-            <div style="background:var(--input-bg); padding:15px; border-radius:12px;">
-                <h3>📢 System</h3>
-                <input type="text" id="announceMsg" placeholder="Broadcast..." style="width:95%; margin-bottom:10px;">
-                <button onclick="sendBroadcast()" style="background:#28a745; color:white; width:100%; margin-bottom:10px;">Start Broadcast</button>
-                <button onclick="clearChatRoom()" style="background:#780000; color:white; width:100%;">☢ Clear Chat</button>
-            </div>
-        </div>
-     </div>
+    <div class="modal-content">
+      <h2>Admin Panel</h2>
+      <button class="nuke-btn" onclick="clearGlobalChat()">☢ WIPE GLOBAL CHAT</button>
+      <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+      <h4>Shadow Ban User</h4>
+      <div style="display:flex; gap:5px;">
+        <input type="text" id="banTarget" placeholder="Username" style="flex:1; margin:0;">
+        <button onclick="handleBanUser()" style="background:#ff4d4d; border:none; color:white;">Ban</button>
+      </div>
+      <p style="font-size:10px; color:#888;">*Banned users can see their own msgs, but others can't.</p>
+      <button onclick="closeModal('adminModal')" style="margin-top:15px;">Close</button>
+    </div>
   </div>
 
-  <div id="chatModal" class="modal-overlay">
-    <div class="modal-content" style="width:550px;">
-      <span class="close-x" onclick="closeModal('chatModal')">&times;</span>
-      <h3 id="chatTitle">Chat</h3>
-      <div id="chatBox"></div>
-      <div style="display:flex; gap:5px;"><input type="text" id="chatInput" style="flex:1;"><button onclick="sendMessage()" style="background:var(--accent); color:black;">Send</button></div>
+  <div id="friendsModal" class="modal-overlay">
+    <div class="modal-content">
+      <div style="display:flex; justify-content: space-between; align-items:center;">
+        <h2 style="margin:0">Social</h2>
+        <span id="onlineCount" style="color:#44eb44; font-size:12px;">0 Online</span>
+      </div>
+      <button onclick="openChat('global', 'Global Chat')" style="width:100%; margin:10px 0; background:#4cc9f0; color:black;">Open Global Chat</button>
+      <div id="chatSection" style="display:none;">
+        <div id="chatBox"></div>
+        <div style="display:flex; gap:5px; margin-top:5px;">
+          <input type="text" id="chatInput" placeholder="Message..." style="flex:1">
+          <button id="recordBtn" onclick="toggleRecording()">🎤</button>
+          <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
+        </div>
+      </div>
+      <button onclick="closeModal('friendsModal')" style="margin-top:10px;">Close</button>
     </div>
   </div>
 
   <div id="authModal" class="modal-overlay">
-    <div class="modal-content" style="width:350px;">
-        <h2>Vault Access</h2>
-        <input type="email" id="authEmail" placeholder="Email"><br>
-        <input type="password" id="authPw" placeholder="Password"><br>
-        <button onclick="handleAuth()">Enter</button>
+    <div class="modal-content">
+      <h2 id="authTitle">Vault Access</h2>
+      <input type="text" id="regName" placeholder="Username">
+      <input type="email" id="authEmail" placeholder="Email">
+      <input type="password" id="authPw" placeholder="Password">
+      <button onclick="handleAuth()" style="background:#28a745; color:white; border:none; padding:12px;">Login / Sign Up</button>
     </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -156,123 +113,116 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
-    
-    let activeChatId = "global_room", chatUnsub = null, allUsers = [], selectedUserUid = null;
+    let activeChatId = "global_room";
+    let chatUnsubscribe = null;
+    let mediaRecorder, audioChunks = [];
+    let isShadowBanned = false;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('userGreeting').innerText = user.displayName || user.email.split('@')[0];
-        document.getElementById('navPfp').src = user.photoURL || 'default-pfp.png';
+        document.getElementById('userGreeting').innerText = user.displayName;
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
-        
-        if (sessionStorage.getItem('impersonating') === 'true') {
-            document.getElementById('impersonatingBanner').style.display = 'block';
-            document.getElementById('targetNameDisplay').innerText = sessionStorage.getItem('targetName');
-            document.getElementById('userGreeting').innerText = sessionStorage.getItem('targetName');
-        }
 
-        if(user.uid === OWNER_UID || sessionStorage.getItem('isAdmin') === 'true') { 
-          document.getElementById('adminBtn').style.display = 'block'; 
-          loadAdminData(); 
-        }
-      } else { openModal('authModal'); }
+        // Check Ban Status
+        const banDoc = await getDoc(doc(db, "banned_users", user.uid));
+        if (banDoc.exists()) isShadowBanned = true;
+
+        if(user.uid === OWNER_UID) document.getElementById('adminBtn').style.display = 'block';
+        await setDoc(doc(db, "online_status", user.uid), { active: true });
+      } else {
+        openModal('authModal');
+      }
     });
 
-    // IMPERSONATION
-    window.impersonateUserFromDetail = () => {
-        const user = allUsers.find(u => u.uid === selectedUserUid);
-        if (!user) return;
-        sessionStorage.setItem('impersonating', 'true');
-        sessionStorage.setItem('targetName', user.displayName || "Unknown");
-        sessionStorage.setItem('isAdmin', 'true');
-        location.reload();
-    };
+    onSnapshot(collection(db, "online_status"), (s) => document.getElementById('onlineCount').innerText = s.size + " Online");
 
-    window.returnToAdmin = () => {
-        sessionStorage.removeItem('impersonating');
-        sessionStorage.removeItem('targetName');
-        location.reload();
-    };
-
-    // USER DIRECTORY
-    function loadAdminData() {
-      onSnapshot(collection(db, "users"), (snap) => {
-        allUsers = [];
-        snap.forEach(d => allUsers.push({uid: d.id, ...d.data()}));
-        searchUsers();
-      });
-    }
-
-    window.searchUsers = () => {
-      const term = document.getElementById('userSearchInput').value.toLowerCase();
-      const box = document.getElementById('userListBox');
-      box.innerHTML = '';
-      allUsers.filter(u => (u.displayName||'').toLowerCase().includes(term)).forEach(user => {
-        const div = document.createElement('div');
-        div.style = "padding:8px; border-bottom:1px solid #444; cursor:pointer;";
-        div.onclick = () => showUserDetail(user.uid);
-        div.innerHTML = `<b>${user.displayName || 'Unknown User'}</b>`;
-        box.appendChild(div);
-      });
-    };
-
-    window.showUserDetail = (uid) => {
-        selectedUserUid = uid;
-        const user = allUsers.find(u => u.uid === uid);
-        const content = document.getElementById('userDetailContent');
-        content.innerHTML = `<b>Name:</b> ${user.displayName || 'Unknown'}<br><b>UID:</b> ${uid}`;
-        document.getElementById('userDetailBox').style.display = 'block';
-    };
-
-    window.syncUserData = async () => {
-        const newName = prompt("Enter correct display name for this user:");
-        if (newName) {
-            await setDoc(doc(db, "users", selectedUserUid), { displayName: newName }, { merge: true });
-            alert("Name updated!");
-        }
-    };
-
-    // UTILS
-    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-    window.toggleTheme = () => {
-        const d = document.documentElement;
-        const newT = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        d.setAttribute('data-theme', newT);
-    };
-    window.setChatTheme = (t) => { document.body.className = t; closeModal('themeModal'); };
-    window.handleAuth = async () => {
-        const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value;
-        await signInWithEmailAndPassword(auth, e, p).then(() => location.reload()).catch(err => alert(err.message));
-    };
-    window.handleLogout = () => signOut(auth).then(() => { sessionStorage.clear(); location.reload(); });
-    
     window.openChat = (id, title) => {
-      activeChatId = id; document.getElementById('chatTitle').innerText = title; openModal('chatModal');
-      if (chatUnsub) chatUnsub();
-      chatUnsub = onSnapshot(query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc")), (snap) => {
-        const box = document.getElementById('chatBox'); box.innerHTML = "";
+      document.getElementById('chatSection').style.display = 'block';
+      if (chatUnsubscribe) chatUnsubscribe();
+      const q = query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc"));
+      chatUnsubscribe = onSnapshot(q, (snap) => {
+        const box = document.getElementById('chatBox');
+        box.innerHTML = "";
         snap.forEach(m => {
           const d = m.data();
-          const tag = d.senderId === OWNER_UID ? '<span class="owner-tag">OWNER</span>' : '';
-          box.innerHTML += `<div class="msg"><b>${d.sender}</b>${tag}: ${d.text}</div>`;
+          // Shadow Ban Logic: Don't show banned messages unless it's the sender themselves or the Admin
+          if (d.shadow && d.senderId !== auth.currentUser.uid && auth.currentUser.uid !== OWNER_UID) return;
+          
+          const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
+          const content = d.type === 'voice' ? `<audio controls src="${d.text}" class="voice-msg"></audio>` : `<span>${d.text}</span>`;
+          box.innerHTML += `<div class="msg"><b>${ownerLabel}${d.sender}</b>: ${content}</div>`;
         });
         box.scrollTop = box.scrollHeight;
       });
     };
 
     window.sendMessage = async () => {
-      const v = document.getElementById('chatInput').value; if(!v) return;
-      await addDoc(collection(db, "chats", activeChatId, "messages"), { 
-        sender: sessionStorage.getItem('impersonating') === 'true' ? sessionStorage.getItem('targetName') : (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]), 
-        senderId: auth.currentUser.uid,
-        text: v, time: Date.now() 
+      const val = document.getElementById('chatInput').value;
+      if (!val) return;
+      await addDoc(collection(db, "chats", activeChatId, "messages"), {
+        senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
+        text: val, type: 'text', time: Date.now(), shadow: isShadowBanned
       });
       document.getElementById('chatInput').value = "";
     };
+
+    window.handleBanUser = async () => {
+      const username = document.getElementById('banTarget').value.toLowerCase().trim();
+      const userSnap = await getDoc(doc(db, "usernames", username));
+      if (userSnap.exists()) {
+        await setDoc(doc(db, "banned_users", userSnap.data().uid), { username, banned: true });
+        alert(username + " shadow banned.");
+      } else { alert("User not found."); }
+    };
+
+    window.clearGlobalChat = async () => {
+      if(!confirm("Wipe all messages?")) return;
+      const q = await getDocs(collection(db, "chats", "global_room", "messages"));
+      const batch = writeBatch(db);
+      q.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    };
+
+    window.toggleRecording = async () => {
+      if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          const reader = new FileReader();
+          reader.readAsDataURL(new Blob(audioChunks));
+          reader.onloadend = () => addDoc(collection(db, "chats", activeChatId, "messages"), {
+            senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, 
+            text: reader.result, type: 'voice', time: Date.now(), shadow: isShadowBanned
+          });
+          audioChunks = [];
+        };
+        mediaRecorder.start();
+        document.getElementById('recordBtn').classList.add('recording-active');
+      } else {
+        mediaRecorder.stop();
+        document.getElementById('recordBtn').classList.remove('recording-active');
+      }
+    };
+
+    window.handleAuth = async () => {
+      const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
+      try {
+        const res = await createUserWithEmailAndPassword(auth, e, p);
+        await updateProfile(res.user, { displayName: n });
+        await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid });
+        location.reload();
+      } catch { await signInWithEmailAndPassword(auth, e, p); location.reload(); }
+    };
+
+    window.handleLogout = () => signOut(auth).then(() => location.reload());
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+    window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
   </script>
 </body>
 </html>
