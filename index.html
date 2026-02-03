@@ -36,7 +36,9 @@
 
     .announcement-banner { background: #ff9f1c; color: #000; padding: 10px; font-weight: bold; text-align: center; border-radius: 6px; margin-bottom: 10px; display: none; font-size: 13px; }
     .user-item { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
-    .admin-scroll { max-height: 200px; overflow-y: auto; margin-top: 10px; padding-right: 5px; }
+    .admin-scroll { max-height: 200px; overflow-y: auto; margin-top: 10px; padding-right: 5px; border: 1px solid #444; border-radius: 4px; padding: 5px; }
+    
+    .search-bar { width: 100%; padding: 8px; font-size: 12px; border-radius: 4px; border: 1px solid #444; background: #111; color: white; margin-bottom: 5px; }
   </style>
 </head>
 <body>
@@ -61,6 +63,7 @@
   <div id="adminModal" class="modal-overlay">
     <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
       <h2>Admin Control Center</h2>
+      
       <h4>📢 Broadcast Announcement</h4>
       <div style="display:flex; gap:5px;">
         <input type="text" id="announceInput" placeholder="System message..." style="flex:1;">
@@ -69,10 +72,13 @@
       <button onclick="clearAnnouncement()" style="font-size:10px; background:none; border:none; color:#888; margin-top:5px; cursor:pointer;">Clear Announcement</button>
 
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+
       <h4>👥 User Directory</h4>
+      <input type="text" id="userSearch" class="search-bar" placeholder="Search usernames..." onkeyup="filterUsers()">
       <div id="userDirectory" class="admin-scroll">Loading directory...</div>
 
       <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+      
       <h4>🚩 User Reports</h4>
       <div id="reportList" class="admin-scroll">No new reports.</div>
 
@@ -91,7 +97,7 @@
         <input type="text" id="chatInput" placeholder="Type message..." style="flex:1">
         <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
       </div>
-      <button onclick="closeModal('friendsModal')" style="margin-top:10px;">Close</button>
+      <button onclick="closeModal('friendsModal')" style="margin-top:10px; border:none; background:none; color:#888;">Close</button>
     </div>
   </div>
 
@@ -224,7 +230,7 @@
         const data = u.data();
         const name = u.id;
         dir.innerHTML += `
-          <div class="user-item">
+          <div class="user-item" data-name="${name.toLowerCase()}">
             <span><b>${name}</b></span>
             <div>
               <button onclick="manageUser('${data.uid}', '${name}', 'mute')" style="font-size:9px; background:#ff9f1c; color:black; border:none; padding:3px; cursor:pointer;">Mute 1h</button>
@@ -233,6 +239,14 @@
           </div>`;
       });
     }
+
+    window.filterUsers = () => {
+      const q = document.getElementById('userSearch').value.toLowerCase();
+      const items = document.querySelectorAll('.user-item');
+      items.forEach(item => {
+        item.style.display = item.getAttribute('data-name').includes(q) ? 'flex' : 'none';
+      });
+    };
 
     window.manageUser = async (uid, name, type) => {
       if (type === 'ban') {
@@ -288,8 +302,14 @@
     };
 
     window.handleLogout = () => signOut(auth).then(() => location.reload());
-    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+    window.openModal = (id) => { 
+        const el = document.getElementById(id);
+        if(el) el.style.display = 'flex'; 
+    };
+    window.closeModal = (id) => { 
+        const el = document.getElementById(id);
+        if(el) el.style.display = 'none'; 
+    };
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
   </script>
 </body>
