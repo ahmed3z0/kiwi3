@@ -112,12 +112,10 @@
     </div>
   </div>
 
-  <div id="adminModal" class="modal-overlay" style="background:var(--bg-color); flex-direction:column; padding:40px; overflow-y:auto;">
-     <div style="width:100%; max-width:900px;">
-        <div style="display:flex; justify-content: space-between;">
-            <h1 style="color:#ff9f1c;">🛡️ Admin Dashboard</h1>
-            <button onclick="closeModal('adminModal')">Close Dashboard</button>
-        </div>
+  <div id="adminModal" class="modal-overlay">
+     <div class="modal-content" style="width:900px; max-width:90vw; max-height:90vh; overflow-y:auto;">
+        <span class="close-x" onclick="closeModal('adminModal')">&times;</span>
+        <h1 style="color:#ff9f1c;">🛡️ Admin Dashboard</h1>
         <div style="background:var(--card-bg); padding:20px; border-radius:12px; margin-top:20px;">
             <h3>Live Logs</h3>
             <div id="logBox" style="height:150px; background:#000; color:#0f0; padding:10px; overflow-y:auto; font-family:monospace; font-size:12px;"></div>
@@ -144,6 +142,7 @@
             <div id="impersonateStatus" style="margin-top:10px; font-size:13px;"></div>
         </div>
      </div>
+  </div>
   </div>
 
   <div id="socialNavModal" class="modal-overlay">
