@@ -234,65 +234,90 @@
         return;
       }
       
-      const s = await getDoc(doc(db, "usernames", name)); 
-      
-      if(!s.exists()) {
-        document.getElementById('lookupResult').innerHTML = "<div class='user-detail' style='color:#ff4d4d;'>❌ User not found</div>";
-        return;
-      }
+      try {
+        const s = await getDoc(doc(db, "usernames", name)); 
+        
+        if(!s.exists()) {
+          document.getElementById('lookupResult').innerHTML = "<div class='user-detail' style='color:#ff4d4d;'>❌ User not found</div>";
+          return;
+        }
 
-      const uid = s.data().uid;
+        const uid = s.data().uid;
 
-      // Get user's message count
-      const msgSnap = await getDocs(query(collection(db, "chats", "global_room", "messages"), where("senderId", "==", uid)));
-      const messageCount = msgSnap.size;
+        // Get user's message count
+        let messageCount = 0;
+        let photoURL = DEFAULT_PFP;
+        let displayName = name;
+        
+        try {
+          const msgSnap = await getDocs(query(collection(db, "chats", "global_room", "messages"), where("senderId", "==", uid)));
+          messageCount = msgSnap.size;
+          
+          // Get display info from most recent message
+          if(msgSnap.size > 0) {
+            const lastMsg = msgSnap.docs[msgSnap.docs.length - 1].data();
+            if(lastMsg.photoURL) photoURL = lastMsg.photoURL;
+            if(lastMsg.sender) displayName = lastMsg.sender;
+          }
+        } catch(e) {
+          console.log("Message fetch error:", e);
+        }
 
-      // Get user's friend count
-      const friendSnap = await getDocs(query(collection(db, "friendships"), where("users", "array-contains", uid)));
-      const friendCount = friendSnap.size;
+        // Get user's friend count
+        let friendCount = 0;
+        try {
+          const friendSnap = await getDocs(query(collection(db, "friendships"), where("users", "array-contains", uid)));
+          friendCount = friendSnap.size;
+        } catch(e) {
+          console.log("Friend fetch error:", e);
+        }
 
-      // Check status
-      const banDoc = await getDoc(doc(db, "banned_users", uid));
-      const isBanned = banDoc.exists();
-      
-      const muteDoc = await getDoc(doc(db, "muted_users", uid));
-      const isMuted = muteDoc.exists();
+        // Check status
+        let isBanned = false;
+        let isMuted = false;
+        
+        try {
+          const banDoc = await getDoc(doc(db, "banned_users", uid));
+          isBanned = banDoc.exists();
+        } catch(e) {
+          console.log("Ban check error:", e);
+        }
+        
+        try {
+          const muteDoc = await getDoc(doc(db, "muted_users", uid));
+          isMuted = muteDoc.exists();
+        } catch(e) {
+          console.log("Mute check error:", e);
+        }
 
-      // Get user data from auth profile
-      let photoURL = DEFAULT_PFP;
-      let displayName = name;
-      
-      // Try to get from recent messages
-      if(msgSnap.size > 0) {
-        const lastMsg = msgSnap.docs[msgSnap.docs.length - 1].data();
-        if(lastMsg.photoURL) photoURL = lastMsg.photoURL;
-        if(lastMsg.sender) displayName = lastMsg.sender;
-      }
-
-      document.getElementById('lookupResult').innerHTML = `
-        <div class="user-detail">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-            <img src="${photoURL}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
-            <div>
-              <div style="font-size:18px; font-weight:bold;">${displayName}</div>
-              <div style="font-size:12px; opacity:0.7;">UID: ${uid}</div>
-              ${isBanned ? '<div style="color:#ff4d4d; font-weight:bold; margin-top:3px;">🚫 BANNED</div>' : ''}
-              ${isMuted ? '<div style="color:#f59e0b; font-weight:bold; margin-top:3px;">🔇 MUTED</div>' : ''}
+        document.getElementById('lookupResult').innerHTML = `
+          <div class="user-detail">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+              <img src="${photoURL}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+              <div>
+                <div style="font-size:18px; font-weight:bold;">${displayName}</div>
+                <div style="font-size:12px; opacity:0.7;">UID: ${uid}</div>
+                ${isBanned ? '<div style="color:#ff4d4d; font-weight:bold; margin-top:3px;">🚫 BANNED</div>' : ''}
+                ${isMuted ? '<div style="color:#f59e0b; font-weight:bold; margin-top:3px;">🔇 MUTED</div>' : ''}
+              </div>
             </div>
+            <div class="stat-grid">
+              <div class="stat-box"><div style="font-weight:bold;">${messageCount}</div><div style="font-size:11px;">Messages</div></div>
+              <div class="stat-box"><div style="font-weight:bold;">${friendCount}</div><div style="font-size:11px;">Friends</div></div>
+            </div>
+            <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+              ${!isBanned ? `<button onclick="quickBanUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="danger-btn">🔨 Ban</button>` : `<button onclick="unbanUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="warning-btn">✓ Unban</button>`}
+              <button onclick="kickUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="warning-btn">👢 Kick</button>
+              ${!isMuted ? `<button onclick="muteUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" class="warning-btn">🔇 Mute</button>` : `<button onclick="unmuteUser('${uid}', '${displayName.replace(/'/g, "\\\'")}')" style="background:#10b981; color:white;">🔊 Unmute</button>`}
+              <button onclick="alert('View messages feature coming soon!')" style="background:#3b82f6; color:white;">📜 Messages</button>
+            </div>
+            <button onclick="impersonateUser('${uid}', '${displayName.replace(/'/g, "\\'")}', '${photoURL}')" style="width:100%; margin-top:10px; background:#a855f7; color:white; font-weight:bold;">👤 Sign In As User</button>
           </div>
-          <div class="stat-grid">
-            <div class="stat-box"><div style="font-weight:bold;">${messageCount}</div><div style="font-size:11px;">Messages</div></div>
-            <div class="stat-box"><div style="font-weight:bold;">${friendCount}</div><div style="font-size:11px;">Friends</div></div>
-          </div>
-          <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-            ${!isBanned ? `<button onclick="quickBanUser('${uid}', '${displayName}')" class="danger-btn">🔨 Ban</button>` : `<button onclick="unbanUser('${uid}', '${displayName}')" class="warning-btn">✓ Unban</button>`}
-            <button onclick="kickUser('${uid}', '${displayName}')" class="warning-btn">👢 Kick</button>
-            ${!isMuted ? `<button onclick="muteUser('${uid}', '${displayName}')" class="warning-btn">🔇 Mute</button>` : `<button onclick="unmuteUser('${uid}', '${displayName}')" style="background:#10b981; color:white;">🔊 Unmute</button>`}
-            <button onclick="viewUserMessages('${uid}', '${displayName}')" style="background:#3b82f6; color:white;">📜 Messages</button>
-          </div>
-          <button onclick="impersonateUser('${uid}', '${displayName}', '${photoURL}')" style="width:100%; margin-top:10px; background:#a855f7; color:white; font-weight:bold;">👤 Sign In As User</button>
-        </div>
-      `;
+        `;
+      } catch(err) {
+        console.error("Lookup error:", err);
+        document.getElementById('lookupResult').innerHTML = `<div class='user-detail' style='color:#ff4d4d;'>❌ Error: ${err.message}</div>`;
+      }
     };
 
     window.quickBanUser = async (uid, username) => {
@@ -395,6 +420,30 @@
         alert(`You are now signed in as ${username}.\n\nYour messages will appear as theirs.\n\nReload the page to return to your admin account.`);
         location.reload();
       }
+    };
+
+    window.viewUserMessages = async (uid, username) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      const msgs = await getDocs(query(collection(db, "chats", "global_room", "messages"), where("senderId", "==", uid), orderBy("time", "desc"), limit(50)));
+      
+      let html = `<div style="max-height:400px; overflow-y:auto; background:#000; padding:15px; border-radius:6px;">`;
+      html += `<h3 style="color:#ff9f1c; margin-top:0;">Messages from ${username}</h3>`;
+      
+      if(msgs.empty) {
+        html += `<div style="text-align:center; opacity:0.5; padding:20px;">No messages found</div>`;
+      } else {
+        msgs.forEach(d => {
+          const msg = d.data();
+          html += `<div style="background:#1a1a1a; padding:10px; margin:5px 0; border-radius:6px; border-left:3px solid #ff9f1c;">
+            <div style="font-size:11px; opacity:0.6;">${new Date(msg.time).toLocaleString()}</div>
+            <div style="margin-top:5px;">${msg.text}</div>
+          </div>`;
+        });
+      }
+      html += `</div>`;
+      
+      alert("Messages displayed in console - check browser console (F12)");
+      console.log(html);
     };
 
     window.clearGlobalChat = async () => {
@@ -647,35 +696,37 @@
 
     window.sendMessage = async () => { 
       const v = document.getElementById('chatInput').value; 
-      if(v) {
-        // Check if user is muted (only check real UID, not impersonated)
-        const muteDoc = await getDoc(doc(db, "muted_users", auth.currentUser.uid));
-        if(muteDoc.exists()) {
-          alert("🔇 You are muted and cannot send messages.");
-          return;
-        }
-        
-        const msgData = { 
-          senderId: window.currentDisplayUID || auth.currentUser.uid, 
-          sender: window.currentDisplayName || auth.currentUser.displayName, 
-          photoURL: window.currentDisplayPhoto || auth.currentUser.photoURL || DEFAULT_PFP, 
-          text: v, 
-          time: Date.now() 
-        };
-        
-        if(replyingTo) {
-          msgData.replyTo = replyingTo;
-        }
-        
-        await addDoc(collection(db, "chats", "global_room", "messages"), msgData); 
-        document.getElementById('chatInput').value="";
-        cancelReply();
+      if(!v) return;
+      
+      // Check if user is muted (only check real UID, not impersonated)
+      const muteDoc = await getDoc(doc(db, "muted_users", auth.currentUser.uid));
+      if(muteDoc.exists()) {
+        alert("🔇 You are muted and cannot send messages.");
+        return;
       }
+      
+      const msgData = { 
+        senderId: window.currentDisplayUID || auth.currentUser.uid, 
+        sender: window.currentDisplayName || auth.currentUser.displayName, 
+        photoURL: window.currentDisplayPhoto || (auth.currentUser.photoURL || DEFAULT_PFP), 
+        text: v, 
+        time: Date.now() 
+      };
+      
+      if(replyingTo) {
+        msgData.replyTo = replyingTo;
+      }
+      
+      await addDoc(collection(db, "chats", "global_room", "messages"), msgData); 
+      document.getElementById('chatInput').value="";
+      cancelReply();
     };
 
     window.sendDM = async () => { 
       const v = document.getElementById('dmInput').value; 
-      if(v && currentDMRecipient) {
+      if(!v || !currentDMRecipient) return;
+      
+      try {
         // Check if user is muted
         const muteDoc = await getDoc(doc(db, "muted_users", auth.currentUser.uid));
         if(muteDoc.exists()) {
@@ -690,7 +741,10 @@
           text: v, 
           time: Date.now() 
         }); 
-        document.getElementById('dmInput').value = ""; 
+        document.getElementById('dmInput').value = "";
+      } catch(err) {
+        console.error("DM send error:", err);
+        alert("Error sending DM. Check console.");
       }
     };
 
