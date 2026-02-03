@@ -113,33 +113,104 @@
   </div>
 
   <div id="adminModal" class="modal-overlay">
-     <div class="modal-content" style="width:900px; max-width:90vw; max-height:90vh; overflow-y:auto;">
+     <div class="modal-content" style="width:1200px; max-width:95vw; max-height:95vh; overflow-y:auto;">
         <span class="close-x" onclick="closeModal('adminModal')">&times;</span>
         <h1 style="color:#ff9f1c;">🛡️ Admin Dashboard</h1>
+        
+        <!-- Analytics Dashboard -->
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-top:20px;">
+            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #28a745;">
+                <div style="font-size:32px; font-weight:bold; color:#28a745;" id="totalUsers">0</div>
+                <div style="font-size:12px; color:#888;">Total Users</div>
+            </div>
+            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #4cc9f0;">
+                <div style="font-size:32px; font-weight:bold; color:#4cc9f0;" id="activeUsers">0</div>
+                <div style="font-size:12px; color:#888;">Active Now</div>
+            </div>
+            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #ff9f1c;">
+                <div style="font-size:32px; font-weight:bold; color:#ff9f1c;" id="totalMessages">0</div>
+                <div style="font-size:12px; color:#888;">Total Messages</div>
+            </div>
+            <div style="background:var(--card-bg); padding:15px; border-radius:12px; text-align:center; border:2px solid #fb5607;">
+                <div style="font-size:32px; font-weight:bold; color:#fb5607;" id="messagesWeek">0</div>
+                <div style="font-size:12px; color:#888;">Messages This Week</div>
+            </div>
+        </div>
+
+        <!-- System Controls -->
         <div style="background:var(--card-bg); padding:20px; border-radius:12px; margin-top:20px;">
-            <h3>Live Logs</h3>
-            <div id="logBox" style="height:150px; background:#000; color:#0f0; padding:10px; overflow-y:auto; font-family:monospace; font-size:12px;"></div>
+            <h3>⚙️ System Controls</h3>
+            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;">
+                <button onclick="toggleRegistration()" id="regToggleBtn" style="background:#28a745; color:white;">🔓 Registration Enabled</button>
+                <button onclick="toggleMaintenance()" id="maintenanceBtn" style="background:#780000; color:white;">🚧 Maintenance Mode OFF</button>
+                <button onclick="backupDatabase()" style="background:#3a86ff; color:white;">💾 Backup Database</button>
+                <button onclick="exportLogs()" style="background:#ff9f1c; color:black;">📊 Export Logs</button>
+            </div>
         </div>
+
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px;">
+            <!-- User Management -->
             <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
-                <h3>User Spy</h3>
-                <input type="text" id="lookupTarget" placeholder="Username..."><button onclick="lookupUser()">Lookup</button>
-                <div id="lookupResult" style="margin-top:10px;"></div>
+                <h3>👥 User Management</h3>
+                <input type="text" id="userSearchInput" placeholder="Search users..." style="width:100%; margin-bottom:10px;" oninput="searchUsers()">
+                <div id="userListBox" style="height:300px; overflow-y:auto; background:var(--input-bg); padding:10px; border-radius:8px; font-size:13px;"></div>
             </div>
+
+            <!-- Live Logs -->
             <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
-                <h3>Broadcast</h3>
-                <input type="text" id="announceMsg" placeholder="Text..." style="width:100%;">
-                <button onclick="sendBroadcast()" style="background:#28a745; color:white; width:100%; margin-top:10px;">Start</button>
-                <button onclick="removeBroadcast()" style="background:#780000; color:white; width:100%; margin-top:5px;">Stop</button>
+                <h3>📋 Live Logs</h3>
+                <div id="logBox" style="height:300px; background:#000; color:#0f0; padding:10px; overflow-y:auto; font-family:monospace; font-size:12px;"></div>
             </div>
         </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px;">
+            <!-- Moderation -->
+            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
+                <h3>🛡️ Moderation</h3>
+                <input type="text" id="muteUserInput" placeholder="User UID to mute..." style="width:100%; margin-bottom:5px;">
+                <input type="number" id="muteDuration" placeholder="Minutes (0 = permanent)" style="width:100%; margin-bottom:10px;">
+                <button onclick="muteUser()" style="background:#ff6b35; color:white; width:100%; margin-bottom:10px;">Mute User</button>
+                <button onclick="clearChatRoom()" style="background:#780000; color:white; width:100%;">Clear Global Chat</button>
+                <div style="margin-top:15px;">
+                    <h4 style="font-size:14px;">Muted Users:</h4>
+                    <div id="mutedListBox" style="height:120px; overflow-y:auto; background:var(--input-bg); padding:10px; border-radius:8px; font-size:12px;"></div>
+                </div>
+            </div>
+
+            <!-- Broadcast & Announcements -->
+            <div style="background:var(--card-bg); padding:20px; border-radius:12px;">
+                <h3>📢 Broadcast</h3>
+                <input type="text" id="announceMsg" placeholder="Broadcast message..." style="width:100%; margin-bottom:10px;">
+                <button onclick="sendBroadcast()" style="background:#28a745; color:white; width:100%; margin-bottom:5px;">Start Broadcast</button>
+                <button onclick="removeBroadcast()" style="background:#780000; color:white; width:100%; margin-bottom:15px;">Stop Broadcast</button>
+                
+                <h4 style="font-size:14px; margin-top:15px;">System Message</h4>
+                <input type="text" id="systemMsgInput" placeholder="Message as SYSTEM..." style="width:100%; margin-bottom:5px;">
+                <button onclick="sendSystemMessage()" style="background:#4cc9f0; color:black; width:100%;">Send to Global Chat</button>
+            </div>
+        </div>
+
+        <!-- Account Impersonation -->
         <div style="background:var(--card-bg); padding:20px; border-radius:12px; margin-top:20px;">
             <h3>🎭 Account Impersonation</h3>
             <p style="font-size:12px; color:#888; margin-bottom:10px;">Sign in as any user temporarily. Your admin account will be restored when you return.</p>
-            <input type="text" id="impersonateTarget" placeholder="Enter user's UID..." style="width:100%; margin-bottom:10px;">
-            <button onclick="impersonateUser()" style="background:#ff6b35; color:white; width:100%; margin-bottom:5px;">Sign In As User</button>
-            <button id="returnToAdminBtn" onclick="returnToAdmin()" style="background:#4cc9f0; color:black; width:100%; display:none;">Return to Admin Account</button>
+            <div style="display:grid; grid-template-columns: 1fr auto auto; gap:10px;">
+                <input type="text" id="impersonateTarget" placeholder="Enter user's UID...">
+                <button onclick="impersonateUser()" style="background:#ff6b35; color:white;">Sign In As User</button>
+                <button id="returnToAdminBtn" onclick="returnToAdmin()" style="background:#4cc9f0; color:black; display:none;">Return to Admin</button>
+            </div>
             <div id="impersonateStatus" style="margin-top:10px; font-size:13px;"></div>
+        </div>
+
+        <!-- User Detail Modal (appears when clicking a user) -->
+        <div id="userDetailBox" style="display:none; margin-top:20px; background:var(--card-bg); padding:20px; border-radius:12px; border:2px solid #ff9f1c;">
+            <h3>User Details</h3>
+            <div id="userDetailContent"></div>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:15px;">
+                <button onclick="banUser()" style="background:#780000; color:white;">Ban User</button>
+                <button onclick="deleteUserAccount()" style="background:#000; color:white;">Delete Account</button>
+                <button onclick="forcePasswordReset()" style="background:#ff9f1c; color:black;">Force PW Reset</button>
+            </div>
         </div>
      </div>
   </div>
@@ -167,7 +238,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, updateProfile, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -184,6 +255,8 @@
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1"; 
     let activeChatId = "global_room", chatUnsubscribe = null;
     let originalAdminData = null; // Store admin data when impersonating
+    let selectedUserUid = null; // For user detail view
+    let allUsers = []; // Cache all users
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -203,13 +276,237 @@
         
         if(user.uid === OWNER_UID) { 
           document.getElementById('adminBtn').style.display = 'block'; 
-          listenToLogs(); 
+          listenToLogs();
+          loadAnalytics();
+          loadAllUsers();
+          listenToMutedUsers();
         }
         listenToBroadcast();
+        updateUserActivity(user.uid);
       } else { 
         openModal('authModal'); 
       }
     });
+
+    // ANALYTICS
+    async function loadAnalytics() {
+      // Total users
+      const usersSnap = await getDoc(doc(db, "analytics", "userCount"));
+      if (usersSnap.exists()) {
+        document.getElementById('totalUsers').innerText = usersSnap.data().count || 0;
+      }
+
+      // Total messages
+      const msgsSnap = await getDoc(doc(db, "analytics", "messageCount"));
+      if (msgsSnap.exists()) {
+        document.getElementById('totalMessages').innerText = msgsSnap.data().count || 0;
+      }
+
+      // Messages this week
+      const weekSnap = await getDoc(doc(db, "analytics", "weeklyMessages"));
+      if (weekSnap.exists()) {
+        document.getElementById('messagesWeek').innerText = weekSnap.data().count || 0;
+      }
+
+      // Active users (users active in last 5 minutes)
+      onSnapshot(collection(db, "activeUsers"), (snap) => {
+        const now = Date.now();
+        let activeCount = 0;
+        snap.forEach(doc => {
+          if (now - doc.data().lastSeen < 300000) activeCount++;
+        });
+        document.getElementById('activeUsers').innerText = activeCount;
+      });
+    }
+
+    async function updateUserActivity(uid) {
+      await setDoc(doc(db, "activeUsers", uid), { lastSeen: Date.now() }, { merge: true });
+    }
+
+    // USER MANAGEMENT
+    async function loadAllUsers() {
+      onSnapshot(collection(db, "users"), (snap) => {
+        allUsers = [];
+        snap.forEach(doc => {
+          allUsers.push({ uid: doc.id, ...doc.data() });
+        });
+        displayUsers(allUsers);
+      });
+    }
+
+    function displayUsers(users) {
+      const box = document.getElementById('userListBox');
+      box.innerHTML = '';
+      users.forEach(user => {
+        const banned = user.banned ? ' <span style="color:#ff0000;">[BANNED]</span>' : '';
+        box.innerHTML += `
+          <div style="padding:8px; margin:5px 0; background:var(--card-bg); border-radius:6px; cursor:pointer; border:1px solid var(--border-color);" onclick="showUserDetail('${user.uid}')">
+            <b>${user.displayName || 'Unknown'}</b>${banned}<br>
+            <span style="font-size:11px; color:#888;">${user.email || 'No email'} | UID: ${user.uid}</span>
+          </div>
+        `;
+      });
+    }
+
+    window.searchUsers = () => {
+      const query = document.getElementById('userSearchInput').value.toLowerCase();
+      const filtered = allUsers.filter(u => 
+        (u.displayName || '').toLowerCase().includes(query) || 
+        (u.email || '').toLowerCase().includes(query) ||
+        u.uid.includes(query)
+      );
+      displayUsers(filtered);
+    };
+
+    window.showUserDetail = async (uid) => {
+      selectedUserUid = uid;
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (!userDoc.exists()) return;
+      
+      const data = userDoc.data();
+      const detailBox = document.getElementById('userDetailBox');
+      const content = document.getElementById('userDetailContent');
+      
+      content.innerHTML = `
+        <div style="display:grid; grid-template-columns: auto 1fr; gap:10px; font-size:14px;">
+          <b>Display Name:</b><span>${data.displayName || 'N/A'}</span>
+          <b>Email:</b><span>${data.email || 'N/A'}</span>
+          <b>UID:</b><span>${uid}</span>
+          <b>Created:</b><span>${data.createdAt ? new Date(data.createdAt).toLocaleString() : 'N/A'}</span>
+          <b>Last Active:</b><span>${data.lastSeen ? new Date(data.lastSeen).toLocaleString() : 'N/A'}</span>
+          <b>Messages Sent:</b><span>${data.messageCount || 0}</span>
+          <b>Status:</b><span>${data.banned ? '<span style="color:#ff0000;">BANNED</span>' : '<span style="color:#28a745;">Active</span>'}</span>
+        </div>
+      `;
+      detailBox.style.display = 'block';
+    };
+
+    window.banUser = async () => {
+      if (!selectedUserUid) return;
+      if (!confirm('Ban this user?')) return;
+      await setDoc(doc(db, "users", selectedUserUid), { banned: true }, { merge: true });
+      await addDoc(collection(db, "logs"), { text: `User ${selectedUserUid} was banned`, time: Date.now() });
+      alert('User banned');
+      document.getElementById('userDetailBox').style.display = 'none';
+    };
+
+    window.deleteUserAccount = async () => {
+      if (!selectedUserUid) return;
+      if (!confirm('DELETE this user account permanently? This cannot be undone!')) return;
+      await setDoc(doc(db, "users", selectedUserUid), { deleted: true, deletedAt: Date.now() }, { merge: true });
+      await addDoc(collection(db, "logs"), { text: `User ${selectedUserUid} was deleted`, time: Date.now() });
+      alert('User account marked as deleted');
+      document.getElementById('userDetailBox').style.display = 'none';
+    };
+
+    window.forcePasswordReset = async () => {
+      if (!selectedUserUid) return;
+      await setDoc(doc(db, "users", selectedUserUid), { forcePasswordReset: true }, { merge: true });
+      await addDoc(collection(db, "logs"), { text: `Password reset forced for ${selectedUserUid}`, time: Date.now() });
+      alert('User will be required to reset password on next login');
+    };
+
+    // MODERATION
+    window.muteUser = async () => {
+      const uid = document.getElementById('muteUserInput').value.trim();
+      const duration = parseInt(document.getElementById('muteDuration').value) || 0;
+      if (!uid) return alert('Enter a user UID');
+      
+      const until = duration === 0 ? 'permanent' : Date.now() + (duration * 60000);
+      await setDoc(doc(db, "mutedUsers", uid), { until, mutedAt: Date.now() });
+      await addDoc(collection(db, "logs"), { text: `User ${uid} muted until ${until}`, time: Date.now() });
+      alert('User muted');
+      document.getElementById('muteUserInput').value = '';
+    };
+
+    function listenToMutedUsers() {
+      onSnapshot(collection(db, "mutedUsers"), (snap) => {
+        const box = document.getElementById('mutedListBox');
+        box.innerHTML = '';
+        snap.forEach(doc => {
+          const data = doc.data();
+          const until = data.until === 'permanent' ? 'Permanent' : new Date(data.until).toLocaleString();
+          box.innerHTML += `<div>${doc.id} - Until: ${until} <button onclick="unmute('${doc.id}')" style="font-size:10px; padding:2px 6px;">Unmute</button></div>`;
+        });
+      });
+    }
+
+    window.unmute = async (uid) => {
+      await setDoc(doc(db, "mutedUsers", uid), {}, { merge: true });
+      await addDoc(collection(db, "logs"), { text: `User ${uid} unmuted`, time: Date.now() });
+    };
+
+    window.clearChatRoom = async () => {
+      if (!confirm('Clear all messages in Global Chat?')) return;
+      const snap = await getDocs(collection(db, "chats", "global_room", "messages"));
+      snap.forEach(async (d) => await deleteDoc(d.ref));
+      await addDoc(collection(db, "logs"), { text: 'Global chat cleared', time: Date.now() });
+      alert('Chat cleared');
+    };
+
+    window.sendSystemMessage = async () => {
+      const msg = document.getElementById('systemMsgInput').value;
+      if (!msg) return;
+      await addDoc(collection(db, "chats", "global_room", "messages"), {
+        sender: "SYSTEM",
+        senderId: "SYSTEM",
+        text: msg,
+        time: Date.now()
+      });
+      document.getElementById('systemMsgInput').value = '';
+      await addDoc(collection(db, "logs"), { text: `System message sent: ${msg}`, time: Date.now() });
+    };
+
+    // SYSTEM CONTROLS
+    window.toggleRegistration = async () => {
+      const settingsDoc = await getDoc(doc(db, "settings", "registration"));
+      const currentState = settingsDoc.exists() ? settingsDoc.data().enabled : true;
+      await setDoc(doc(db, "settings", "registration"), { enabled: !currentState });
+      const btn = document.getElementById('regToggleBtn');
+      if (currentState) {
+        btn.innerText = '🔒 Registration Disabled';
+        btn.style.background = '#780000';
+      } else {
+        btn.innerText = '🔓 Registration Enabled';
+        btn.style.background = '#28a745';
+      }
+      await addDoc(collection(db, "logs"), { text: `Registration ${!currentState ? 'enabled' : 'disabled'}`, time: Date.now() });
+    };
+
+    window.toggleMaintenance = async () => {
+      const settingsDoc = await getDoc(doc(db, "settings", "maintenance"));
+      const currentState = settingsDoc.exists() ? settingsDoc.data().active : false;
+      await setDoc(doc(db, "settings", "maintenance"), { active: !currentState });
+      const btn = document.getElementById('maintenanceBtn');
+      if (!currentState) {
+        btn.innerText = '🚧 Maintenance Mode ON';
+        btn.style.background = '#ff9f1c';
+      } else {
+        btn.innerText = '🚧 Maintenance Mode OFF';
+        btn.style.background = '#780000';
+      }
+      await addDoc(collection(db, "logs"), { text: `Maintenance mode ${!currentState ? 'ON' : 'OFF'}`, time: Date.now() });
+    };
+
+    window.backupDatabase = async () => {
+      alert('Database backup initiated. This is a simulated function - implement real backup logic on backend.');
+      await addDoc(collection(db, "logs"), { text: 'Database backup initiated', time: Date.now() });
+    };
+
+    window.exportLogs = async () => {
+      const logsSnap = await getDocs(query(collection(db, "logs"), orderBy("time", "desc"), limit(1000)));
+      let logText = 'VAULT LOGS EXPORT\n\n';
+      logsSnap.forEach(doc => {
+        const d = doc.data();
+        logText += `[${new Date(d.time).toLocaleString()}] ${d.text}\n`;
+      });
+      const blob = new Blob([logText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vault-logs-${Date.now()}.txt`;
+      a.click();
+    };
 
     window.setChatTheme = (t) => { document.body.className = t; localStorage.setItem('v-theme', t); closeModal('themeModal'); };
     const st = localStorage.getItem('v-theme'); if(st) document.body.className = st;
