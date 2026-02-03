@@ -37,6 +37,7 @@
     .tab-container { display: flex; gap: 5px; margin-bottom: 10px; }
     .tab-btn { flex: 1; font-size: 11px; padding: 8px 2px; }
     .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border-color); }
+    .auth-mode-link { color: #4cc9f0; cursor: pointer; text-decoration: underline; font-size: 12px; margin-top: 10px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -76,10 +77,10 @@
           <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
         </div>
       </div>
-      <div id="view-friends" style="display:none;"><div style="display:flex; gap:5px;"><input type="text" id="friendSearch" placeholder="Username..."><button onclick="sendFriendRequest()">Add</button></div><div id="friendsListContainer"></div></div>
-      <div id="view-dm" style="display:none;"><button onclick="showTab('friends')">← Back</button><h4 id="dmTitle"></h4><div id="dmBox"></div><div style="display:flex; gap:5px;"><input type="text" id="dmInput"><button onclick="sendDM()">Send</button></div></div>
+      <div id="view-friends" style="display:none;"><div style="display:flex; gap:5px;"><input type="text" id="friendSearch" placeholder="Username..." style="flex:1"><button onclick="sendFriendRequest()">Add</button></div><div id="friendsListContainer"></div></div>
+      <div id="view-dm" style="display:none;"><button onclick="showTab('friends')">← Back</button><h4 id="dmTitle"></h4><div id="dmBox"></div><div style="display:flex; gap:5px;"><input type="text" id="dmInput" style="flex:1"><button onclick="sendDM()">Send</button></div></div>
       <div id="view-requests" style="display:none;"><h4>Friend Requests</h4><div id="requestsListContainer"></div></div>
-      <div id="view-mod" style="display:none;"><h4 style="color:#ff4d4d;">Surveillance</h4><div id="modDMBox"></div></div>
+      <div id="view-mod" style="display:none;"><h4 style="color:#ff4d4d;">Surveillance</h4><div id="modDMBox" style="font-size:12px; height:300px; overflow-y:auto; background:var(--input-bg); padding:5px;"></div></div>
       <button onclick="closeModal('friendsModal')" style="margin-top:15px; background:#444;">Close</button>
     </div>
   </div>
@@ -98,12 +99,34 @@
     </div>
   </div>
 
-  <div id="settingsModal" class="modal-overlay"><div class="modal-content"><h2>Settings</h2><input type="text" id="setDisplayName"><input type="text" id="setPfpUrl"><button onclick="updateUserProfile()">Save</button><button onclick="closeModal('settingsModal')">Cancel</button></div></div>
-  <div id="authModal" class="modal-overlay"><div class="modal-content"><h2>Vault Access</h2><input type="text" id="regName" placeholder="Username"><input type="email" id="authEmail"><input type="password" id="authPw"><button onclick="handleAuth()">Access</button></div></div>
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <input type="text" id="setDisplayName" placeholder="Display Name">
+      <input type="text" id="setPfpUrl" placeholder="PFP Image URL">
+      <button onclick="updateUserProfile()" style="background:#4cc9f0; color:black;">Save</button>
+      <button onclick="closeModal('settingsModal')">Cancel</button>
+    </div>
+  </div>
+
+  <div id="authModal" class="modal-overlay">
+    <div class="modal-content" style="text-align: center;">
+      <h2 id="authTitle">Vault: Sign Up</h2>
+      <input type="text" id="regName" placeholder="Username (Sign Up only)">
+      <input type="email" id="authEmail" placeholder="Email">
+      <input type="password" id="authPw" placeholder="Password">
+      <button id="authBtn" onclick="handleAuth()" style="background:#4cc9f0; color:black; width:100%; margin-top:10px;">Create Account</button>
+      
+      <div id="authToggleArea">
+        <span class="auth-mode-link" onclick="toggleAuthMode()" id="authLink">Already have an account? Login</span><br>
+        <span class="auth-mode-link" onclick="forgotPassword()" style="color:#aaa; text-decoration:none;">Forgot Password?</span>
+      </div>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch, where, deleteDoc, and, or, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg", authDomain: "ahmed3z0.firebaseapp.com", projectId: "ahmed3z0", storageBucket: "ahmed3z0.firebasestorage.app", messagingSenderId: "512511154228", appId: "1:512511154228:web:8f97e9c75b3800f6d65261" };
@@ -113,16 +136,35 @@
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1";
     const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/5029/5029253.png";
     
+    let isLoginMode = false;
     let bannedWords = [];
     let isMuted = false;
     let dmUnsub = null, currentDMRecipient = null;
 
-    // --- ADMIN SETTINGS OBSERVER ---
+    // --- AUTH TOGGLE & FORGOT PW ---
+    window.toggleAuthMode = () => {
+        isLoginMode = !isLoginMode;
+        document.getElementById('authTitle').innerText = isLoginMode ? "Vault: Login" : "Vault: Sign Up";
+        document.getElementById('authBtn').innerText = isLoginMode ? "Login" : "Create Account";
+        document.getElementById('regName').style.display = isLoginMode ? "none" : "block";
+        document.getElementById('authLink').innerText = isLoginMode ? "Need an account? Sign Up" : "Already have an account? Login";
+    };
+
+    window.forgotPassword = async () => {
+        const email = document.getElementById('authEmail').value;
+        if(!email) return alert("Please enter your email first!");
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert("Password reset email sent!");
+        } catch (e) { alert(e.message); }
+    };
+
+    // --- ADMIN SETTINGS ---
     onSnapshot(doc(db, "settings", "global_config"), (doc) => {
         if(doc.exists()) {
-            const data = doc.data();
-            bannedWords = data.bannedWords || [];
-            isMuted = data.isMuted || false;
+            const d = doc.data();
+            bannedWords = d.bannedWords || [];
+            isMuted = d.isMuted || false;
             if(auth.currentUser?.uid === OWNER_UID) {
                 document.getElementById('bannedWordsInput').value = bannedWords.join(", ");
                 document.getElementById('muteBtn').innerText = `Toggle Global Mute: ${isMuted ? 'ON' : 'OFF'}`;
@@ -131,24 +173,9 @@
         }
     });
 
-    // --- AUTO-MODERATOR ---
-    function checkMessage(text) {
-        if (auth.currentUser.uid === OWNER_UID) return true; // Owner is immune
-        if (isMuted) { alert("Chat is currently muted by Admin."); return false; }
-        const cleanText = text.toLowerCase();
-        for (let word of bannedWords) {
-            if (cleanText.includes(word.trim().toLowerCase()) && word.trim() !== "") {
-                alert("Message blocked: Contains restricted language.");
-                return false;
-            }
-        }
-        return true;
-    }
-
     window.updateBannedWords = async () => {
         if(!verifyOwner()) return;
-        const val = document.getElementById('bannedWordsInput').value;
-        const words = val.split(",").map(s => s.trim());
+        const words = document.getElementById('bannedWordsInput').value.split(",").map(s => s.trim());
         await setDoc(doc(db, "settings", "global_config"), { bannedWords: words }, { merge: true });
     };
 
@@ -157,31 +184,65 @@
         await setDoc(doc(db, "settings", "global_config"), { isMuted: !isMuted }, { merge: true });
     };
 
-    // --- CORE REPLACEMENTS ---
+    // --- CHAT LOGIC ---
     window.sendMessage = async () => {
       const val = document.getElementById('chatInput').value;
       if (!val || !checkMessage(val)) return;
-      await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, photoURL: auth.currentUser.photoURL || "", text: val, type: 'text', time: Date.now() });
+      await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, photoURL: auth.currentUser.photoURL || DEFAULT_PFP, text: val, type: 'text', time: Date.now() });
       document.getElementById('chatInput').value = "";
     };
 
-    // (All other logic: verifyOwner, handleAuth, showTab, startDM, openChat, etc. remains the same as previous)
-    // [Keeping functions active from previous turn...]
-    async function reportIntruder() { const n = auth.currentUser?.displayName || "Unknown"; await addDoc(collection(db, "dms"), { sender: "🚨 SYSTEM", toId: OWNER_UID, text: `INTRUDER: ${n} tried Admin Panel!`, time: Date.now(), isAlert: true }); alert("Logged."); location.reload(); }
+    function checkMessage(text) {
+        if (auth.currentUser.uid === OWNER_UID) return true;
+        if (isMuted) { alert("Chat is muted."); return false; }
+        const clean = text.toLowerCase();
+        for (let w of bannedWords) { if (clean.includes(w.toLowerCase()) && w !== "") { alert("Restricted word detected!"); return false; } }
+        return true;
+    }
+
+    // --- CORE FIREBASE ---
+    onAuthStateChanged(auth, async (u) => {
+        if (u) {
+            document.getElementById('loggedInUI').style.display = 'flex';
+            document.getElementById('userGreeting').innerText = u.displayName;
+            document.getElementById('navPfp').src = u.photoURL || DEFAULT_PFP;
+            document.getElementById('kiwiImage').style.display = 'inline-block';
+            closeModal('authModal');
+            if(u.uid === OWNER_UID) { 
+                document.getElementById('adminBtn').style.display = 'block'; 
+                document.getElementById('modTabBtn').style.display = 'block'; 
+            }
+            setupRequestObserver(); setupFriendsObserver();
+        } else { openModal('authModal'); }
+    });
+
+    window.handleAuth = async () => {
+        const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
+        try {
+            if (isLoginMode) { await signInWithEmailAndPassword(auth, e, p); }
+            else { 
+                const res = await createUserWithEmailAndPassword(auth, e, p);
+                await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP });
+                await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid });
+            }
+            location.reload();
+        } catch (err) { alert(err.message); }
+    };
+
+    // --- SHARED FUNCTIONS ---
+    async function reportIntruder() { const n = auth.currentUser?.displayName || "Unknown"; await addDoc(collection(db, "dms"), { sender: "🚨 SYSTEM", toId: OWNER_UID, text: `INTRUDER: ${n} tried Admin Panel!`, time: Date.now(), isAlert: true }); alert("Attempt logged."); location.reload(); }
     function verifyOwner() { if (auth.currentUser?.uid !== OWNER_UID) { reportIntruder(); return false; } return true; }
     window.tryOpenAdmin = () => { if (verifyOwner()) openModal('adminModal'); };
-    onAuthStateChanged(auth, async (u) => { if (u) { document.getElementById('loggedInUI').style.display = 'flex'; document.getElementById('userGreeting').innerText = u.displayName; document.getElementById('navPfp').src = u.photoURL || DEFAULT_PFP; document.getElementById('kiwiImage').style.display = 'inline-block'; closeModal('authModal'); if(u.uid === OWNER_UID) { document.getElementById('adminBtn').style.display = 'block'; document.getElementById('modTabBtn').style.display = 'block'; } setupRequestObserver(); setupFriendsObserver(); } else { openModal('authModal'); }});
-    window.updateUserProfile = async () => { const n = document.getElementById('setDisplayName').value; const p = document.getElementById('setPfpUrl').value; await updateProfile(auth.currentUser, { displayName: n, photoURL: p }); location.reload(); };
-    window.openChat = () => { onSnapshot(query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc")), (snap) => { const box = document.getElementById('chatBox'); box.innerHTML = ""; snap.forEach(m => { const d = m.data(); if (d.type === 'broadcast') { box.innerHTML += `<div class="broadcast-msg">📢 ${d.text}</div>`; document.getElementById('kiwiImage').classList.add('kiwi-bounce'); setTimeout(() => document.getElementById('kiwiImage').classList.remove('kiwi-bounce'), 500); } else { const p = d.photoURL || DEFAULT_PFP; const t = d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : ''; box.innerHTML += `<div class="msg"><img src="${p}" class="pfp-small"><div><b>${t}${d.sender}</b>: ${d.text}</div></div>`; }}); box.scrollTop = box.scrollHeight; }); };
+    window.updateUserProfile = async () => { const n = document.getElementById('setDisplayName').value || auth.currentUser.displayName; const p = document.getElementById('setPfpUrl').value || auth.currentUser.photoURL; await updateProfile(auth.currentUser, { displayName: n, photoURL: p }); location.reload(); };
+    window.openChat = () => { onSnapshot(query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc")), (snap) => { const box = document.getElementById('chatBox'); box.innerHTML = ""; snap.forEach(m => { const d = m.data(); if (d.type === 'broadcast') { box.innerHTML += `<div class="broadcast-msg">📢 ${d.text}</div>`; } else { box.innerHTML += `<div class="msg"><img src="${d.photoURL || DEFAULT_PFP}" class="pfp-small"><div><b>${d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : ''}${d.sender}</b>: ${d.text}</div></div>`; }}); box.scrollTop = box.scrollHeight; }); };
     window.sendBroadcast = async () => { if (!verifyOwner()) return; const t = document.getElementById('broadcastInput').value; if (t) await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: OWNER_UID, sender: "SYSTEM", text: t, type: 'broadcast', time: Date.now() }); document.getElementById('broadcastInput').value = ""; };
     window.startDM = (uid, n) => { currentDMRecipient = uid; document.getElementById('dmTitle').innerText = `Chat with ${n}`; showTab('dm'); if(dmUnsub) dmUnsub(); dmUnsub = onSnapshot(query(collection(db, "dms"), or(and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)), and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))), orderBy("time", "asc")), (snap) => { const box = document.getElementById('dmBox'); box.innerHTML = ""; snap.forEach(m => { const d = m.data(); box.innerHTML += `<div class="msg"><img src="${d.photoURL || DEFAULT_PFP}" class="pfp-small"><b>${d.sender}:</b> ${d.text}</div>`; }); box.scrollTop = box.scrollHeight; }); };
-    window.sendDM = async () => { const v = document.getElementById('dmInput').value; if(!v) return; await addDoc(collection(db, "dms"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, photoURL: auth.currentUser.photoURL || "", toId: currentDMRecipient, text: v, time: Date.now() }); document.getElementById('dmInput').value = ""; };
-    window.setupOwnerSurveillance = () => { onSnapshot(query(collection(db, "dms"), orderBy("time", "desc")), (snap) => { const box = document.getElementById('modDMBox'); box.innerHTML = ""; snap.forEach(doc => { const d = doc.data(); box.innerHTML += `<div ${d.isAlert ? 'class="intruder-alert"' : ''}>[${new Date(d.time).toLocaleTimeString()}] <b>${d.sender}</b>: ${d.text}</div>`; }); }); };
+    window.sendDM = async () => { const v = document.getElementById('dmInput').value; if(!v) return; await addDoc(collection(db, "dms"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, photoURL: auth.currentUser.photoURL || DEFAULT_PFP, toId: currentDMRecipient, text: v, time: Date.now() }); document.getElementById('dmInput').value = ""; };
+    window.setupOwnerSurveillance = () => { onSnapshot(query(collection(db, "dms"), orderBy("time", "desc")), (snap) => { const box = document.getElementById('modDMBox'); box.innerHTML = ""; snap.forEach(doc => { const d = doc.data(); box.innerHTML += `<div ${d.isAlert ? 'class="intruder-alert"' : 'style="border-bottom:1px solid #333; padding:5px;"'}>[${new Date(d.time).toLocaleTimeString()}] <b>${d.sender}</b>: ${d.text}</div>`; }); }); };
     window.sendFriendRequest = async () => { const n = document.getElementById('friendSearch').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", n)); if (s.exists()) { await setDoc(doc(db, "friend_requests", `${auth.currentUser.uid}_${s.data().uid}`), { fromUid: auth.currentUser.uid, fromName: auth.currentUser.displayName, toUid: s.data().uid }); alert("Sent!"); } };
     function setupRequestObserver() { onSnapshot(query(collection(db, "friend_requests"), where("toUid", "==", auth.currentUser.uid)), (snap) => { const cont = document.getElementById('requestsListContainer'); cont.innerHTML = ""; snap.forEach(d => { const r = d.data(); cont.innerHTML += `<div class="user-item"><span>${r.fromName}</span><button onclick="acceptFriend('${r.fromUid}','${r.fromName}','${d.id}')">Accept</button></div>`; }); document.getElementById('reqBadge').innerText = snap.size > 0 ? `(${snap.size})` : ""; }); }
     window.acceptFriend = async (uid, n, rid) => { const b = writeBatch(db); b.set(doc(db, "friendships", `${auth.currentUser.uid}_${uid}`), { users: [auth.currentUser.uid, uid], names: [auth.currentUser.displayName, n] }); b.delete(doc(db, "friend_requests", rid)); await b.commit(); };
     function setupFriendsObserver() { onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", auth.currentUser.uid)), (snap) => { const cont = document.getElementById('friendsListContainer'); cont.innerHTML = ""; snap.forEach(d => { const dat = d.data(); const fUid = dat.users.find(u => u !== auth.currentUser.uid); const fName = dat.names.find(n => n !== auth.currentUser.displayName); cont.innerHTML += `<div class="user-item"><b>${fName}</b><button onclick="startDM('${fUid}','${fName}')">DM</button></div>`; }); }); }
-    window.handleAuth = async () => { const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value; try { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); location.reload(); } catch { await signInWithEmailAndPassword(auth, e, p); location.reload(); } };
     window.handleLogout = () => signOut(auth).then(() => location.reload());
     window.openModal = (id) => document.getElementById(id).style.display = 'flex';
     window.closeModal = (id) => document.getElementById(id).style.display = 'none';
