@@ -380,12 +380,26 @@
 
     window.showUserDetail = async (uid) => {
       selectedUserUid = uid;
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (!userDoc.exists()) return;
       
-      const data = userDoc.data();
+      // Fetch fresh data from Firestore
+      const userDoc = await getDoc(doc(db, "users", uid));
+      
       const detailBox = document.getElementById('userDetailBox');
       const content = document.getElementById('userDetailContent');
+      
+      if (!userDoc.exists()) {
+        // User document doesn't exist yet - try to get from auth
+        content.innerHTML = `
+          <div style="display:grid; grid-template-columns: auto 1fr; gap:10px; font-size:14px;">
+            <b>UID:</b><span>${uid}</span>
+            <b>Status:</b><span style="color:#ff9f1c;">⚠️ User document not created yet. They need to log in once.</span>
+          </div>
+        `;
+        detailBox.style.display = 'block';
+        return;
+      }
+      
+      const data = userDoc.data();
       
       content.innerHTML = `
         <div style="display:grid; grid-template-columns: auto 1fr; gap:10px; font-size:14px;">
