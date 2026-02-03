@@ -258,8 +258,28 @@
     let selectedUserUid = null; // For user detail view
     let allUsers = []; // Cache all users
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // Create/update user document in Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+          // Create new user document
+          await setDoc(userDocRef, {
+            displayName: user.displayName || user.email?.split('@')[0] || 'User',
+            email: user.email || '',
+            photoURL: user.photoURL || 'default-pfp.png',
+            createdAt: Date.now(),
+            lastSeen: Date.now(),
+            messageCount: 0,
+            banned: false
+          });
+        } else {
+          // Update last seen
+          await setDoc(userDocRef, { lastSeen: Date.now() }, { merge: true });
+        }
+        
         document.getElementById('loggedInUI').style.display = 'flex';
         document.getElementById('userGreeting').innerText = user.displayName;
         document.getElementById('navPfp').src = user.photoURL || 'default-pfp.png';
@@ -531,6 +551,13 @@
         text: v, 
         time: Date.now() 
       });
+      
+      // Increment user's message count
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      const currentCount = userDoc.exists() ? (userDoc.data().messageCount || 0) : 0;
+      await setDoc(userRef, { messageCount: currentCount + 1 }, { merge: true });
+      
       document.getElementById('chatInput').value = "";
     };
 
