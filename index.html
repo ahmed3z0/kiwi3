@@ -22,29 +22,20 @@
     .modal-content { background: var(--card-bg); color: var(--text-color); padding: 25px; border-radius: 12px; width: 450px; display: flex; flex-direction: column; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; }
     input, textarea { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); font-family: inherit; }
 
-    #chatBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
+    #chatBox, #dmBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
     .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
     
-    /* OWNER & ALERTS */
-    .owner-tag { 
-        background-color: #ff4d4d; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; 
-        border-radius: 4px; margin-right: 6px; text-transform: uppercase; box-shadow: 0 0 8px rgba(255, 77, 77, 0.4);
-    }
+    .owner-tag { background-color: #ff4d4d; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-right: 6px; text-transform: uppercase; }
     .intruder-alert { color: #ff4d4d; background: rgba(255, 77, 77, 0.1); padding: 5px; border-left: 3px solid #ff4d4d; font-weight: bold; margin-bottom: 5px; }
 
-    /* BROADCAST & ANIMATION */
-    .broadcast-msg {
-        background: linear-gradient(90deg, #ff9f1c, #ffbf69, #ff9f1c);
-        background-size: 200% auto; color: #000; padding: 10px; border-radius: 8px; margin: 15px 0;
-        font-weight: bold; text-align: center; border: 2px solid #ffffff33; animation: shimmer 3s linear infinite;
-    }
-    .kiwi-bounce { animation: bounce 0.5s ease; }
-
+    .broadcast-msg { background: linear-gradient(90deg, #ff9f1c, #ffbf69, #ff9f1c); background-size: 200% auto; color: #000; padding: 10px; border-radius: 8px; margin: 15px 0; font-weight: bold; text-align: center; border: 2px solid #ffffff33; animation: shimmer 3s linear infinite; }
     @keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+    .kiwi-bounce { animation: bounce 0.5s ease; }
     @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
     
     .tab-container { display: flex; gap: 5px; margin-bottom: 10px; }
     .tab-btn { flex: 1; font-size: 11px; padding: 8px 2px; }
+    .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border-color); }
   </style>
 </head>
 <body>
@@ -70,15 +61,42 @@
     <div class="modal-content">
       <div class="tab-container">
         <button class="tab-btn" onclick="showTab('global')">Global</button>
+        <button class="tab-btn" onclick="showTab('friends')">Friends</button>
+        <button class="tab-btn" onclick="showTab('requests')">Requests <span id="reqBadge"></span></button>
         <button id="modTabBtn" class="tab-btn" style="display:none; background:#ff9f1c; color:black;" onclick="showTab('mod')">MOD DMs</button>
       </div>
+
       <div id="view-global">
         <div id="chatBox"></div>
         <div style="display:flex; gap:5px; margin-top:5px;">
-          <input type="text" id="chatInput" placeholder="Message..." style="flex:1">
+          <input type="text" id="chatInput" placeholder="Message...">
           <button onclick="sendMessage()" style="background:#4cc9f0; color:black;">Send</button>
         </div>
       </div>
+
+      <div id="view-friends" style="display:none;">
+        <div style="display:flex; gap:5px;">
+          <input type="text" id="friendSearch" placeholder="Username..." style="flex:1">
+          <button onclick="sendFriendRequest()" style="background:#4cc9f0; color:black;">Add</button>
+        </div>
+        <div id="friendsListContainer"></div>
+      </div>
+
+      <div id="view-dm" style="display:none;">
+        <button onclick="showTab('friends')" style="font-size:10px;">← Back</button>
+        <h4 id="dmTitle" style="margin:5px 0;"></h4>
+        <div id="dmBox"></div>
+        <div style="display:flex; gap:5px; margin-top:5px;">
+          <input type="text" id="dmInput" placeholder="Direct Message..." style="flex:1">
+          <button onclick="sendDM()" style="background:#4cc9f0; color:black;">Send</button>
+        </div>
+      </div>
+
+      <div id="view-requests" style="display:none;">
+        <h4>Friend Requests</h4>
+        <div id="requestsListContainer"></div>
+      </div>
+
       <div id="view-mod" style="display:none;">
         <h4 style="color:#ff4d4d;">System Surveillance</h4>
         <div id="modDMBox" style="height:300px; overflow-y:auto; background:var(--input-bg); padding:10px; font-size:12px;"></div>
@@ -98,20 +116,12 @@
     </div>
   </div>
 
-  <div id="authModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>Vault Access</h2>
-      <input type="text" id="regName" placeholder="Username">
-      <input type="email" id="authEmail" placeholder="Email">
-      <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()">Access</button>
-    </div>
-  </div>
+  <div id="authModal" class="modal-overlay"><div class="modal-content"><h2>Vault Access</h2><input type="text" id="regName" placeholder="Username"><input type="email" id="authEmail" placeholder="Email"><input type="password" id="authPw" placeholder="Password"><button onclick="handleAuth()">Access</button></div></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, onSnapshot, addDoc, orderBy, writeBatch, where, deleteDoc, and, or } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg",
@@ -125,115 +135,115 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1";
+    let dmUnsub = null, currentDMRecipient = null;
 
-    // --- SECURITY & LOGGING ---
+    // --- SECURITY ---
     async function reportIntruder() {
-        await addDoc(collection(db, "dms"), {
-            sender: "SECURITY SYSTEM",
-            senderId: "SYSTEM",
-            toId: "MOD_ALERTS",
-            text: `⚠️ ALERT: Unauthorized Admin access attempted by ${auth.currentUser.displayName} (${auth.currentUser.uid})`,
-            time: Date.now(),
-            isAlert: true
-        });
-        alert("SECURITY ALERT: This attempt has been logged.");
-        location.reload();
+        await addDoc(collection(db, "dms"), { sender: "SYSTEM", senderId: "SYSTEM", toId: "MOD_ALERTS", text: `⚠️ ALERT: ${auth.currentUser.displayName} tried to open Admin Panel!`, time: Date.now(), isAlert: true });
+        alert("SECURITY ALERT: This attempt has been logged."); location.reload();
     }
-
-    function verifyOwner() {
-        if (!auth.currentUser || auth.currentUser.uid !== OWNER_UID) {
-            reportIntruder();
-            return false;
-        }
-        return true;
-    }
-
+    function verifyOwner() { if (!auth.currentUser || auth.currentUser.uid !== OWNER_UID) { reportIntruder(); return false; } return true; }
     window.tryOpenAdmin = () => { if (verifyOwner()) openModal('adminModal'); };
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         document.getElementById('loggedInUI').style.display = 'flex';
         document.getElementById('userGreeting').innerText = user.displayName;
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
-        if(user.uid === OWNER_UID) {
-          document.getElementById('adminBtn').style.display = 'block';
-          document.getElementById('modTabBtn').style.display = 'block';
-        }
+        if(user.uid === OWNER_UID) { document.getElementById('adminBtn').style.display = 'block'; document.getElementById('modTabBtn').style.display = 'block'; }
+        setupRequestObserver(); setupFriendsObserver();
       } else { openModal('authModal'); }
     });
 
-    // --- ADMIN ACTIONS ---
+    // --- BROADCAST ---
     window.sendBroadcast = async () => {
         if (!verifyOwner()) return;
         const text = document.getElementById('broadcastInput').value;
-        if (!text) return;
-        await addDoc(collection(db, "chats", "global_room", "messages"), {
-            senderId: OWNER_UID, sender: "SYSTEM", text: text, type: 'broadcast', time: Date.now()
-        });
+        if (text) await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: OWNER_UID, sender: "SYSTEM", text, type: 'broadcast', time: Date.now() });
         document.getElementById('broadcastInput').value = "";
     };
 
-    window.clearGlobalChat = async () => {
-        if (!verifyOwner()) return;
-        if(confirm("Wipe everything?")) {
-            const q = await getDocs(collection(db, "chats", "global_room", "messages"));
-            const batch = writeBatch(db);
-            q.forEach(d => batch.delete(d.ref));
-            await batch.commit();
-        }
-    };
-
-    // --- CHAT & MODERATION ---
+    // --- CHAT & DM LOGIC ---
     window.openChat = () => {
-      const q = query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc"));
-      onSnapshot(q, (snap) => {
-        const box = document.getElementById('chatBox');
-        box.innerHTML = "";
+      onSnapshot(query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc")), (snap) => {
+        const box = document.getElementById('chatBox'); box.innerHTML = "";
         snap.forEach(m => {
           const d = m.data();
           if (d.type === 'broadcast') {
             box.innerHTML += `<div class="broadcast-msg">📢 ${d.text}</div>`;
-            const img = document.getElementById('kiwiImage');
-            img.classList.add('kiwi-bounce');
-            setTimeout(() => img.classList.remove('kiwi-bounce'), 500);
+            document.getElementById('kiwiImage').classList.add('kiwi-bounce');
+            setTimeout(() => document.getElementById('kiwiImage').classList.remove('kiwi-bounce'), 500);
           } else {
-            const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : '';
-            box.innerHTML += `<div class="msg"><b>${ownerLabel}${d.sender}</b>: <span>${d.text}</span></div>`;
+            const tag = d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : '';
+            box.innerHTML += `<div class="msg"><b>${tag}${d.sender}</b>: ${d.text}</div>`;
           }
         });
         box.scrollTop = box.scrollHeight;
       });
     };
 
-    window.setupOwnerSurveillance = () => {
-        if(auth.currentUser.uid !== OWNER_UID) return;
-        onSnapshot(query(collection(db, "dms"), orderBy("time", "desc")), (snap) => {
-            const box = document.getElementById('modDMBox');
-            box.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                const style = d.isAlert ? 'class="intruder-alert"' : '';
-                box.innerHTML += `<div ${style}>[${new Date(d.time).toLocaleTimeString()}] <b>${d.sender}</b>: ${d.text}</div>`;
-            });
-        });
+    window.startDM = (uid, name) => {
+      currentDMRecipient = uid; document.getElementById('dmTitle').innerText = `Chat with ${name}`; showTab('dm');
+      if(dmUnsub) dmUnsub();
+      const q = query(collection(db, "dms"), or(and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)), and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))), orderBy("time", "asc"));
+      dmUnsub = onSnapshot(q, (snap) => {
+        const box = document.getElementById('dmBox'); box.innerHTML = "";
+        snap.forEach(m => { const d = m.data(); box.innerHTML += `<div class="msg"><b>${d.sender}:</b> ${d.text}</div>`; });
+        box.scrollTop = box.scrollHeight;
+      });
     };
 
-    // --- CORE ---
-    window.sendMessage = async () => {
-      const val = document.getElementById('chatInput').value;
-      if (!val) return;
-      await addDoc(collection(db, "chats", "global_room", "messages"), {
-        senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, text: val, type: 'text', time: Date.now()
+    window.sendDM = async () => {
+      const val = document.getElementById('dmInput').value; if(!val) return;
+      await addDoc(collection(db, "dms"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, toId: currentDMRecipient, text: val, time: Date.now() });
+      document.getElementById('dmInput').value = "";
+    };
+
+    // --- FRIENDS SYSTEM ---
+    window.sendFriendRequest = async () => {
+      const name = document.getElementById('friendSearch').value.toLowerCase().trim();
+      const snap = await getDoc(doc(db, "usernames", name));
+      if (snap.exists()) {
+        await setDoc(doc(db, "friend_requests", `${auth.currentUser.uid}_${snap.data().uid}`), { fromUid: auth.currentUser.uid, fromName: auth.currentUser.displayName, toUid: snap.data().uid });
+        alert("Request Sent!");
+      } else alert("Not found");
+    };
+
+    function setupRequestObserver() {
+      onSnapshot(query(collection(db, "friend_requests"), where("toUid", "==", auth.currentUser.uid)), (snap) => {
+        const cont = document.getElementById('requestsListContainer'); cont.innerHTML = "";
+        snap.forEach(d => { const r = d.data(); cont.innerHTML += `<div class="user-item"><span>${r.fromName}</span><button onclick="acceptFriend('${r.fromUid}','${r.fromName}','${d.id}')">Accept</button></div>`; });
+        document.getElementById('reqBadge').innerText = snap.size > 0 ? `(${snap.size})` : "";
       });
+    }
+
+    window.acceptFriend = async (uid, name, rid) => {
+      const batch = writeBatch(db);
+      batch.set(doc(db, "friendships", `${auth.currentUser.uid}_${uid}`), { users: [auth.currentUser.uid, uid], names: [auth.currentUser.displayName, name] });
+      batch.delete(doc(db, "friend_requests", rid)); await batch.commit();
+    };
+
+    function setupFriendsObserver() {
+      onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", auth.currentUser.uid)), (snap) => {
+        const cont = document.getElementById('friendsListContainer'); cont.innerHTML = "";
+        snap.forEach(d => {
+          const dat = d.data(); const fUid = dat.users.find(u => u !== auth.currentUser.uid); const fName = dat.names.find(n => n !== auth.currentUser.displayName);
+          cont.innerHTML += `<div class="user-item"><b>${fName}</b><button onclick="startDM('${fUid}','${fName}')">DM</button></div>`;
+        });
+      });
+    }
+
+    // --- CORE WRAPPERS ---
+    window.sendMessage = async () => {
+      const val = document.getElementById('chatInput').value; if(!val) return;
+      await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, text: val, type: 'text', time: Date.now() });
       document.getElementById('chatInput').value = "";
     };
-
     window.handleAuth = async () => {
       const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
-      try { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n }); location.reload(); }
+      try { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); location.reload(); }
       catch { await signInWithEmailAndPassword(auth, e, p); location.reload(); }
     };
     window.handleLogout = () => signOut(auth).then(() => location.reload());
@@ -241,12 +251,19 @@
     window.closeModal = (id) => document.getElementById(id).style.display = 'none';
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
     window.showTab = (tab) => {
-      ['global', 'mod'].forEach(v => { const el = document.getElementById(`view-${v}`); if(el) el.style.display = 'none'; });
+      ['global', 'friends', 'dm', 'requests', 'mod'].forEach(v => { const el = document.getElementById(`view-${v}`); if(el) el.style.display = 'none'; });
       document.getElementById(`view-${tab}`).style.display = 'block';
       if(tab === 'global') openChat();
       if(tab === 'mod') setupOwnerSurveillance();
     };
     window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
+    window.clearGlobalChat = async () => { if(verifyOwner() && confirm("Wipe?")) { const q = await getDocs(collection(db, "chats", "global_room", "messages")); const b = writeBatch(db); q.forEach(d => b.delete(d.ref)); await b.commit(); } };
+    window.setupOwnerSurveillance = () => {
+        onSnapshot(query(collection(db, "dms"), orderBy("time", "desc")), (snap) => {
+            const box = document.getElementById('modDMBox'); box.innerHTML = "";
+            snap.forEach(doc => { const d = doc.data(); box.innerHTML += `<div ${d.isAlert ? 'class="intruder-alert"' : ''}>[${new Date(d.time).toLocaleTimeString()}] <b>${d.sender}</b>: ${d.text}</div>`; });
+        });
+    };
   </script>
 </body>
 </html>
