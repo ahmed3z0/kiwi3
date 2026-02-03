@@ -23,12 +23,10 @@
     input, textarea { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); font-family: inherit; }
 
     #chatBox, #dmBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
-    .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
-    .pfp-small { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #444; flex-shrink: 0; }
+    .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; display: flex; align-items: center; gap: 10px; }
+    .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #333; flex-shrink: 0; border: 1px solid var(--border-color); }
     
     .owner-tag { background-color: #ff4d4d; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-right: 6px; text-transform: uppercase; }
-    
-    /* INTRUDER ALERT STYLE */
     .intruder-alert { color: #ff4d4d; background: rgba(255, 77, 77, 0.15); border: 1px solid #ff4d4d; padding: 8px; margin: 8px 0; border-radius: 6px; font-weight: bold; }
 
     .broadcast-msg { background: linear-gradient(90deg, #ff9f1c, #ffbf69, #ff9f1c); background-size: 200% auto; color: #000; padding: 12px; border-radius: 8px; margin: 15px 0; font-weight: bold; text-align: center; border: 2px solid #ffffff33; animation: shimmer 3s linear infinite; }
@@ -48,7 +46,7 @@
       <button onclick="toggleTheme()" id="themeBtn">Mode</button>
       <button id="adminBtn" onclick="tryOpenAdmin()" style="display:none; background:#ff9f1c; color:black;">Admin</button>
       <div id="loggedInUI" style="display:none; align-items: center; gap:10px;">
-        <img id="navPfp" src="" class="pfp-small" style="display:none;">
+        <img id="navPfp" src="" class="pfp-small">
         <span id="userGreeting"></span>
         <button onclick="openModal('settingsModal')">Settings</button>
         <button onclick="openSocialModal()">Social</button>
@@ -142,6 +140,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1";
+    const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/5029/5029253.png"; // Kiwi Icon
     let dmUnsub = null, currentDMRecipient = null;
 
     // --- SECURITY LOGIC ---
@@ -160,7 +159,7 @@
         document.getElementById('loggedInUI').style.display = 'flex';
         document.getElementById('userGreeting').innerText = user.displayName;
         const navPfp = document.getElementById('navPfp');
-        if(user.photoURL) { navPfp.src = user.photoURL; navPfp.style.display = 'block'; }
+        navPfp.src = user.photoURL || DEFAULT_PFP;
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
         if(user.uid === OWNER_UID) { document.getElementById('adminBtn').style.display = 'block'; document.getElementById('modTabBtn').style.display = 'block'; }
@@ -170,7 +169,7 @@
 
     // --- PFP & PROFILE ---
     window.updateUserProfile = async () => {
-        const name = document.getElementById('setDisplayName').value;
+        const name = document.getElementById('setDisplayName').value || auth.currentUser.displayName;
         const pfp = document.getElementById('setPfpUrl').value;
         if (auth.currentUser) { await updateProfile(auth.currentUser, { displayName: name, photoURL: pfp }); location.reload(); }
     };
@@ -186,9 +185,9 @@
             document.getElementById('kiwiImage').classList.add('kiwi-bounce');
             setTimeout(() => document.getElementById('kiwiImage').classList.remove('kiwi-bounce'), 500);
           } else {
-            const pfp = d.photoURL ? `<img src="${d.photoURL}" class="pfp-small">` : `<div class="pfp-small"></div>`;
+            const pfpImg = d.photoURL || DEFAULT_PFP;
             const tag = d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : '';
-            box.innerHTML += `<div class="msg">${pfp}<div><b>${tag}${d.sender}</b>: ${d.text}</div></div>`;
+            box.innerHTML += `<div class="msg"><img src="${pfpImg}" class="pfp-small"><div><b>${tag}${d.sender}</b>: ${d.text}</div></div>`;
           }
         });
         box.scrollTop = box.scrollHeight;
@@ -215,7 +214,11 @@
       const q = query(collection(db, "dms"), or(and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)), and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))), orderBy("time", "asc"));
       dmUnsub = onSnapshot(q, (snap) => {
         const box = document.getElementById('dmBox'); box.innerHTML = "";
-        snap.forEach(m => { const d = m.data(); box.innerHTML += `<div class="msg"><b>${d.sender}:</b> ${d.text}</div>`; });
+        snap.forEach(m => { 
+            const d = m.data(); 
+            const pfpImg = d.photoURL || DEFAULT_PFP;
+            box.innerHTML += `<div class="msg"><img src="${pfpImg}" class="pfp-small"><b>${d.sender}:</b> ${d.text}</div>`; 
+        });
         box.scrollTop = box.scrollHeight;
       });
     };
@@ -251,7 +254,7 @@
     // --- HELPERS ---
     window.handleAuth = async () => {
       const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
-      try { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); location.reload(); }
+      try { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); location.reload(); }
       catch { await signInWithEmailAndPassword(auth, e, p); location.reload(); }
     };
     window.handleLogout = () => signOut(auth).then(() => location.reload());
