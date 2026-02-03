@@ -10,6 +10,23 @@
     header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 10px; }
     button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; }
+    
+    /* PULSING RED-PURPLE OWNER TAG */
+    .owner-tag { 
+      font-weight: bold; 
+      text-transform: uppercase; 
+      font-size: 0.85em; 
+      margin-right: 8px; 
+      animation: ownerGlow 2s infinite ease-in-out;
+      text-shadow: 0 0 5px rgba(255, 77, 77, 0.3);
+    }
+
+    @keyframes ownerGlow {
+      0% { color: #ff4d4d; }
+      50% { color: #a855f7; text-shadow: 0 0 10px rgba(168, 85, 247, 0.6); }
+      100% { color: #ff4d4d; }
+    }
+
     #adminModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 2000; overflow-y: auto; padding: 40px; box-sizing: border-box; }
     .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 1200px; margin: 0 auto; }
     .admin-card { background: #111; border: 1px solid #ff9f1c; padding: 20px; border-radius: 12px; }
@@ -17,10 +34,10 @@
     .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 450px; display: flex; flex-direction: column; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; }
     input, textarea { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
     #chatBox, #dmBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
-    .msg { margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); }
+    .msg { margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); display: flex; align-items: center; }
     .broadcast-msg { background: linear-gradient(90deg, #ff4d4d, #ff9f1c, #ff4d4d); background-size: 200% auto; color: #000; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; animation: shimmer 3s infinite linear; margin-bottom: 10px; }
     @keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
-    .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
   </style>
 </head>
 <body>
@@ -96,14 +113,10 @@
     window.tryOpenAdmin = async () => {
       if (!auth.currentUser || auth.currentUser.uid !== OWNER_UID) {
         const name = auth.currentUser ? auth.currentUser.displayName : "Unknown Hacker";
-        // Public shame broadcast
         await addDoc(collection(db, "chats", "global_room", "messages"), {
-          sender: "SECURITY", 
-          text: `🤡 Look at this clown (${name}) trying to hack the Admin Panel!`, 
-          type: 'broadcast', 
-          time: Date.now()
+          sender: "SECURITY", text: `🤡 Look at this clown (${name}) trying to hack the Admin Panel!`, type: 'broadcast', time: Date.now()
         });
-        alert("ACCESS DENIED: Your attempt has been logged and broadcasted to the server.");
+        alert("ACCESS DENIED.");
         return;
       }
       document.getElementById('adminModal').style.display='block';
@@ -113,7 +126,7 @@
     window.sendBroadcast = async () => { if(auth.currentUser.uid !== OWNER_UID) return; const txt = document.getElementById('broadcastInput').value; if(txt) await addDoc(collection(db, "chats", "global_room", "messages"), { sender: "SYSTEM", text: txt, type: 'broadcast', time: Date.now() }); document.getElementById('broadcastInput').value=""; };
     window.lookupUser = async () => { if(auth.currentUser.uid !== OWNER_UID) return; const name = document.getElementById('lookupInput').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", name)); document.getElementById('lookupResult').innerText = s.exists() ? `UID: ${s.data().uid}` : "Not found."; };
 
-    // --- CORE SYSTEMS ---
+    // --- AUTH & CORE ---
     onAuthStateChanged(auth, u => {
       if(u) {
         document.getElementById('loggedInUI').style.display = 'flex';
@@ -137,37 +150,35 @@
         let b = document.getElementById('chatBox'); b.innerHTML = "";
         s.forEach(m => {
           const d = m.data();
-          if(d.type === 'broadcast') b.innerHTML += `<div class="broadcast-msg">${d.text}</div>`;
-          else b.innerHTML += `<div class="msg"><b>${d.sender}:</b> ${d.text}</div>`;
+          if(d.type === 'broadcast') {
+            b.innerHTML += `<div class="broadcast-msg">${d.text}</div>`;
+          } else {
+            const tag = d.senderId === OWNER_UID ? `<span class="owner-tag">[OWNER]</span>` : "";
+            const pfp = `<img src="${d.photoURL || DEFAULT_PFP}" class="pfp-small">`;
+            b.innerHTML += `<div class="msg">${pfp}<div>${tag}<b>${d.sender}:</b> ${d.text}</div></div>`;
+          }
         }); b.scrollTop = b.scrollHeight;
       });
     };
 
     window.startDM = (uid, n) => {
-      currentDMRecipient = uid; 
-      document.getElementById('dmTitle').innerText = n; 
-      showTab('dm'); 
+      currentDMRecipient = uid; document.getElementById('dmTitle').innerText = n; showTab('dm'); 
       if(dmUnsub) dmUnsub();
-      // Proper private message query
-      const dmQuery = query(
-        collection(db, "dms"),
-        or(
-          and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)),
-          and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))
-        ),
-        orderBy("time", "asc")
-      );
+      const dmQuery = query(collection(db, "dms"), or(and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)), and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))), orderBy("time", "asc"));
       dmUnsub = onSnapshot(dmQuery, s => {
         let b = document.getElementById('dmBox'); b.innerHTML = "";
-        s.forEach(m => { const d = m.data(); b.innerHTML += `<div class="msg"><b>${d.sender}:</b> ${d.text}</div>`; });
+        s.forEach(m => { 
+          const d = m.data(); 
+          const tag = d.senderId === OWNER_UID ? `<span class="owner-tag">[OWNER]</span>` : "";
+          b.innerHTML += `<div class="msg"><div>${tag}<b>${d.sender}:</b> ${d.text}</div></div>`; 
+        });
         b.scrollTop = b.scrollHeight;
       });
     };
 
-    window.sendMessage = async () => { const v = document.getElementById('chatInput').value; if(v) await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, text: v, time: Date.now() }); document.getElementById('chatInput').value=""; };
+    window.sendMessage = async () => { const v = document.getElementById('chatInput').value; if(v) await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, photoURL: auth.currentUser.photoURL || DEFAULT_PFP, text: v, time: Date.now() }); document.getElementById('chatInput').value=""; };
     window.sendDM = async () => { const v = document.getElementById('dmInput').value; if(v && currentDMRecipient) await addDoc(collection(db, "dms"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, toId: currentDMRecipient, text: v, time: Date.now() }); document.getElementById('dmInput').value = ""; };
 
-    // --- SHARED HELPERS ---
     window.showTab = t => { ['global','friends','dm','requests'].forEach(v => { document.getElementById(`view-${v}`).style.display='none'; }); document.getElementById(`view-${t}`).style.display='block'; if(t==='global') openChat(); };
     window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
     window.handleLogout = () => signOut(auth).then(()=>location.reload());
@@ -186,7 +197,7 @@
       });
       onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", auth.currentUser.uid)), s => {
         let c = document.getElementById('friendsList'); c.innerHTML = "";
-        s.forEach(d => { const dat = d.data(); const fUid = dat.users.find(u => u !== auth.currentUser.uid); const fName = dat.names.find(n => n !== auth.currentUser.displayName); c.innerHTML += `<div style="padding:5px; border-bottom:1px solid #333;"><b>${fName}</b> <button onclick="startDM('${fUid}','${fName}')">DM</button></div>`; });
+        s.forEach(d => { const dat = d.data(); const fUid = dat.users.find(u => u !== auth.currentUser.uid); const fName = dat.names.find(n => n !== auth.currentUser.displayName); c.innerHTML += `<div><b>${fName}</b> <button onclick="startDM('${fUid}','${fName}')">DM</button></div>`; });
       });
     }
     window.sendFriendRequest = async () => { const n = document.getElementById('friendSearch').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", n)); if(s.exists()) { await setDoc(doc(db, "friend_requests", `${auth.currentUser.uid}_${s.data().uid}`), { fromUid: auth.currentUser.uid, fromName: auth.currentUser.displayName, toUid: s.data().uid }); alert("Sent!"); } };
