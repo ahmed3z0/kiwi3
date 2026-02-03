@@ -260,28 +260,42 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Create/update user document in Firestore
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-          // Create new user document
-          await setDoc(userDocRef, {
-            displayName: user.displayName || user.email?.split('@')[0] || 'User',
-            email: user.email || '',
-            photoURL: user.photoURL || 'default-pfp.png',
-            createdAt: Date.now(),
-            lastSeen: Date.now(),
-            messageCount: 0,
-            banned: false
-          });
-        } else {
-          // Update last seen
-          await setDoc(userDocRef, { lastSeen: Date.now() }, { merge: true });
+        try {
+          // Create/update user document in Firestore
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          console.log('User logged in:', user.uid);
+          console.log('User email:', user.email);
+          console.log('User displayName:', user.displayName);
+          console.log('User doc exists:', userDoc.exists());
+          
+          if (!userDoc.exists()) {
+            // Create new user document
+            const newUserData = {
+              displayName: user.displayName || user.email?.split('@')[0] || 'User',
+              email: user.email || '',
+              photoURL: user.photoURL || 'default-pfp.png',
+              createdAt: Date.now(),
+              lastSeen: Date.now(),
+              messageCount: 0,
+              banned: false
+            };
+            console.log('Creating new user document:', newUserData);
+            await setDoc(userDocRef, newUserData);
+            console.log('User document created successfully!');
+          } else {
+            // Update last seen
+            await setDoc(userDocRef, { lastSeen: Date.now() }, { merge: true });
+            console.log('Updated last seen for existing user');
+          }
+        } catch (error) {
+          console.error('Error creating/updating user document:', error);
+          alert('Error saving user data: ' + error.message);
         }
         
         document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('userGreeting').innerText = user.displayName;
+        document.getElementById('userGreeting').innerText = user.displayName || user.email || 'User';
         document.getElementById('navPfp').src = user.photoURL || 'default-pfp.png';
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
