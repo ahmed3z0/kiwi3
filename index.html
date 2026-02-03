@@ -22,24 +22,25 @@
     .theme-matrix { --msg-bg: #001a00; --msg-text: #00ff41; --chat-accent: #008f11; font-family: 'Courier New', monospace; }
 
     body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-    header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    header { width: 100%; background-color: var(--header-bg); padding: 12px 0; display: flex; justify-content: flex-end; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 10; }
     .auth-buttons { margin-right: 30px; display: flex; align-items: center; gap: 12px; }
     
     .pfp-circle { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); cursor: pointer; }
     button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--btn-bg); color: var(--text-color); font-weight: 600; border: none; }
     button:hover { filter: brightness(1.2); }
 
-    .owner-tag { background: #ff0000; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; font-weight: 800; text-transform: uppercase; box-shadow: 0 0 5px rgba(255,0,0,0.5); }
+    .owner-tag { background: #ff0000; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; font-weight: 800; text-transform: uppercase; }
 
-    .impersonating-banner { background: #ff6b35; color: white; padding: 8px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 60; box-shadow: 0 2px 10px rgba(255,107,53,0.5); display: none; }
-
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 480px; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; max-height: 90vh; overflow-y: auto; }
+    /* MODAL FIX: Added background-color explicitly to stop the "blackout" issue */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background-color: var(--card-bg) !important; color: var(--text-color); padding: 25px; border-radius: 12px; width: 480px; display: flex; flex-direction: column; border: 1px solid var(--border-color); position: relative; max-height: 90vh; overflow-y: auto; }
     .close-x { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #888; }
 
-    #chatBox { height: 380px; overflow-y: auto; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin: 10px 0; box-shadow: var(--chat-glow); }
+    #chatBox { height: 380px; overflow-y: auto; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin: 10px 0; }
     .msg { margin-bottom: 12px; padding: 10px; border-radius: 8px; background: var(--msg-bg, #2a2a2a); color: var(--msg-text, #fff); border-left: 4px solid var(--chat-accent, #4cc9f0); font-size: 14px; }
     input { padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); }
+    
+    .impersonating-banner { background: #ff6b35; color: white; padding: 8px; text-align: center; font-weight: bold; width: 100%; display: none; }
   </style>
 </head>
 <body class="theme-classic">
@@ -49,7 +50,7 @@
     <button onclick="returnToAdmin()" style="background:white; color:black; margin-left:15px; padding:3px 8px; font-size:11px;">EXIT</button>
   </div>
   
-  <div id="broadcastBanner" style="width:100%; background:#ff9f1c; color:#000; padding:10px; text-align:center; font-weight:bold; display:none; position: sticky; top: 0; z-index: 50;"></div>
+  <div id="broadcastBanner" style="width:100%; background:#ff9f1c; color:#000; padding:10px; text-align:center; font-weight:bold; display:none;"></div>
 
   <header>
     <div class="auth-buttons">
@@ -70,62 +71,71 @@
     <img id="kiwiImage" src="kiwi.jpg" width="180" style="display:none; border-radius:20px;">
   </div>
 
+  <div id="themeModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-x" onclick="closeModal('themeModal')">&times;</span>
+      <h2 style="margin-top:0;">Chat Themes</h2>
+      <button onclick="setChatTheme('theme-classic')" style="margin-bottom:10px;">Classic Vault</button>
+      <button onclick="setChatTheme('theme-neon')" style="margin-bottom:10px;">Neon Toxicity</button>
+      <button onclick="setChatTheme('theme-sunset')" style="margin-bottom:10px;">Sunset Haze</button>
+      <button onclick="setChatTheme('theme-matrix')">The Matrix</button>
+    </div>
+  </div>
+
+  <div id="socialNavModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-x" onclick="closeModal('socialNavModal')">&times;</span>
+      <h2 style="margin-top:0;">Social</h2>
+      <button onclick="openChat('global_room', 'Global Chat'); closeModal('socialNavModal');" style="margin-bottom:10px; padding:15px; width:100%;">🌍 Global Chat</button>
+      <button disabled style="opacity:0.5; padding:15px; width:100%;">👥 Friends (Locked)</button>
+    </div>
+  </div>
+
   <div id="adminModal" class="modal-overlay">
-     <div class="modal-content" style="width:1200px; max-width:95vw; max-height:95vh;">
+     <div class="modal-content" style="width:1000px; max-width:95vw;">
         <span class="close-x" onclick="closeModal('adminModal')">&times;</span>
-        <h1 style="color:#ff9f1c;">🛡️ Admin Dashboard</h1>
+        <h2 style="color:#ff9f1c; margin-top:0;">🛡️ Admin Dashboard</h2>
         
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div style="background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid #333;">
+            <div style="background:var(--input-bg); padding:15px; border-radius:12px;">
                 <h3>👥 User Directory</h3>
-                <input type="text" id="userSearchInput" placeholder="Search by name or UID..." style="width:100%; margin-bottom:10px;" oninput="searchUsers()">
-                <div id="userListBox" style="height:300px; overflow-y:auto; background:var(--input-bg); padding:10px; border-radius:8px;"></div>
+                <input type="text" id="userSearchInput" placeholder="Search..." style="width:95%; margin-bottom:10px;" oninput="searchUsers()">
+                <div id="userListBox" style="height:250px; overflow-y:auto;"></div>
                 
-                <div id="userDetailBox" style="display:none; margin-top:15px; padding:15px; border:1px solid var(--accent); border-radius:8px;">
-                    <h4>Selected User Detail</h4>
-                    <div id="userDetailContent" style="font-size:13px; margin-bottom:10px;"></div>
-                    <div style="display:flex; gap:5px;">
+                <div id="userDetailBox" style="display:none; margin-top:15px; padding:10px; border:1px solid var(--accent); border-radius:8px;">
+                    <div id="userDetailContent"></div>
+                    <div style="display:flex; gap:5px; margin-top:10px;">
                         <button onclick="syncUserData()" style="background:#28a745; color:white; flex:1;">Sync Name</button>
-                        <button onclick="banUser()" style="background:#780000; color:white; flex:1;">Ban</button>
+                        <button onclick="impersonateUserFromDetail()" style="background:#ff6b35; color:white; flex:1;">Impersonate</button>
                     </div>
                 </div>
             </div>
 
-            <div style="background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid #333;">
-                <h3>🎭 Account Impersonation</h3>
-                <div style="display:flex; gap:10px; margin-bottom:20px;">
-                    <input type="text" id="impersonateTarget" placeholder="Username..." style="flex:1;">
-                    <button onclick="impersonateUser()" style="background:#ff6b35; color:white;">SIGN IN</button>
-                </div>
-
-                <h3>📢 Broadcast</h3>
-                <input type="text" id="announceMsg" placeholder="Global message..." style="width:100%; margin-bottom:10px;">
-                <button onclick="sendBroadcast()" style="background:#28a745; color:white; width:100%; margin-bottom:5px;">Start Broadcast</button>
-                <button onclick="removeBroadcast()" style="background:#444; color:white; width:100%;">Stop Broadcast</button>
-                
-                <button onclick="clearChatRoom()" style="background:#780000; color:white; width:100%; margin-top:20px; padding:15px;">☢ CLEAR GLOBAL CHAT</button>
+            <div style="background:var(--input-bg); padding:15px; border-radius:12px;">
+                <h3>📢 System</h3>
+                <input type="text" id="announceMsg" placeholder="Broadcast..." style="width:95%; margin-bottom:10px;">
+                <button onclick="sendBroadcast()" style="background:#28a745; color:white; width:100%; margin-bottom:10px;">Start Broadcast</button>
+                <button onclick="clearChatRoom()" style="background:#780000; color:white; width:100%;">☢ Clear Chat</button>
             </div>
         </div>
      </div>
   </div>
 
-  <div id="authModal" class="modal-overlay">
-    <div class="modal-content" style="width:350px;">
-        <h2>Vault Access</h2>
-        <input type="email" id="authEmail" placeholder="Email" style="margin-bottom:10px;">
-        <input type="password" id="authPw" placeholder="Password" style="margin-bottom:15px;">
-        <button onclick="handleAuth()" style="background:var(--accent); color:black;">ENTER VAULT</button>
-    </div>
-  </div>
-
-  <div id="themeModal" class="modal-overlay">...</div>
-  <div id="socialNavModal" class="modal-overlay">...</div>
   <div id="chatModal" class="modal-overlay">
     <div class="modal-content" style="width:550px;">
       <span class="close-x" onclick="closeModal('chatModal')">&times;</span>
       <h3 id="chatTitle">Chat</h3>
       <div id="chatBox"></div>
       <div style="display:flex; gap:5px;"><input type="text" id="chatInput" style="flex:1;"><button onclick="sendMessage()" style="background:var(--accent); color:black;">Send</button></div>
+    </div>
+  </div>
+
+  <div id="authModal" class="modal-overlay">
+    <div class="modal-content" style="width:350px;">
+        <h2>Vault Access</h2>
+        <input type="email" id="authEmail" placeholder="Email"><br>
+        <input type="password" id="authPw" placeholder="Password"><br>
+        <button onclick="handleAuth()">Enter</button>
     </div>
   </div>
 
@@ -152,51 +162,42 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Fix: Get display name accurately
-        const actualName = user.displayName || user.email.split('@')[0];
-        
         document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('userGreeting').innerText = actualName;
+        document.getElementById('userGreeting').innerText = user.displayName || user.email.split('@')[0];
         document.getElementById('navPfp').src = user.photoURL || 'default-pfp.png';
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
         
-        // Handle Impersonation State
         if (sessionStorage.getItem('impersonating') === 'true') {
             document.getElementById('impersonatingBanner').style.display = 'block';
-            document.getElementById('targetNameDisplay').innerText = actualName;
+            document.getElementById('targetNameDisplay').innerText = sessionStorage.getItem('targetName');
+            document.getElementById('userGreeting').innerText = sessionStorage.getItem('targetName');
         }
 
         if(user.uid === OWNER_UID || sessionStorage.getItem('isAdmin') === 'true') { 
           document.getElementById('adminBtn').style.display = 'block'; 
           loadAdminData(); 
         }
-        listenToBroadcast();
       } else { openModal('authModal'); }
     });
 
-    // RESTORED: IMPERSONATION
-    window.impersonateUser = () => {
-        const targetName = document.getElementById('impersonateTarget').value.trim();
-        const target = allUsers.find(u => (u.displayName||'').toLowerCase() === targetName.toLowerCase());
-        if (!target) return alert("User not found.");
-
+    // IMPERSONATION
+    window.impersonateUserFromDetail = () => {
+        const user = allUsers.find(u => u.uid === selectedUserUid);
+        if (!user) return;
         sessionStorage.setItem('impersonating', 'true');
-        sessionStorage.setItem('isAdmin', 'true'); // Allow access back to admin panel
-        document.getElementById('userGreeting').innerText = target.displayName;
-        document.getElementById('impersonatingBanner').style.display = 'block';
-        document.getElementById('targetNameDisplay').innerText = target.displayName;
-        closeModal('adminModal');
-        alert("Signed in as " + target.displayName);
+        sessionStorage.setItem('targetName', user.displayName || "Unknown");
+        sessionStorage.setItem('isAdmin', 'true');
+        location.reload();
     };
 
     window.returnToAdmin = () => {
         sessionStorage.removeItem('impersonating');
-        sessionStorage.removeItem('isAdmin');
+        sessionStorage.removeItem('targetName');
         location.reload();
     };
 
-    // FIXED: LOAD USERS & SYNC (Fixes "User" name issue)
+    // USER DIRECTORY
     function loadAdminData() {
       onSnapshot(collection(db, "users"), (snap) => {
         allUsers = [];
@@ -209,39 +210,69 @@
       const term = document.getElementById('userSearchInput').value.toLowerCase();
       const box = document.getElementById('userListBox');
       box.innerHTML = '';
-      allUsers.filter(u => (u.displayName||'').toLowerCase().includes(term) || u.uid.includes(term)).forEach(user => {
+      allUsers.filter(u => (u.displayName||'').toLowerCase().includes(term)).forEach(user => {
         const div = document.createElement('div');
-        div.style = "padding:8px; border-bottom:1px solid #333; cursor:pointer;";
+        div.style = "padding:8px; border-bottom:1px solid #444; cursor:pointer;";
         div.onclick = () => showUserDetail(user.uid);
-        div.innerHTML = `<b>${user.displayName || 'Unknown'}</b><br><small>${user.uid}</small>`;
+        div.innerHTML = `<b>${user.displayName || 'Unknown User'}</b>`;
         box.appendChild(div);
       });
     };
 
-    window.showUserDetail = async (uid) => {
+    window.showUserDetail = (uid) => {
         selectedUserUid = uid;
         const user = allUsers.find(u => u.uid === uid);
         const content = document.getElementById('userDetailContent');
-        content.innerHTML = `<b>Name:</b> ${user.displayName}<br><b>Email:</b> ${user.email}<br><b>UID:</b> ${uid}`;
+        content.innerHTML = `<b>Name:</b> ${user.displayName || 'Unknown'}<br><b>UID:</b> ${uid}`;
         document.getElementById('userDetailBox').style.display = 'block';
     };
 
     window.syncUserData = async () => {
-        const user = allUsers.find(u => u.uid === selectedUserUid);
-        // Fix: Use their actual existing name instead of hardcoded "User"
-        const nameToSave = user.displayName || "New Member";
-        await setDoc(doc(db, "users", selectedUserUid), { displayName: nameToSave }, { merge: true });
-        alert("Synced successfully!");
+        const newName = prompt("Enter correct display name for this user:");
+        if (newName) {
+            await setDoc(doc(db, "users", selectedUserUid), { displayName: newName }, { merge: true });
+            alert("Name updated!");
+        }
     };
 
-    // Keep Chat and Auth Helpers...
-    window.openModal = (id) => { const m = document.getElementById(id); if(m) m.style.display = 'flex'; };
-    window.closeModal = (id) => { const m = document.getElementById(id); if(m) m.style.display = 'none'; };
+    // UTILS
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+    window.toggleTheme = () => {
+        const d = document.documentElement;
+        const newT = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        d.setAttribute('data-theme', newT);
+    };
+    window.setChatTheme = (t) => { document.body.className = t; closeModal('themeModal'); };
     window.handleAuth = async () => {
         const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value;
         await signInWithEmailAndPassword(auth, e, p).then(() => location.reload()).catch(err => alert(err.message));
     };
     window.handleLogout = () => signOut(auth).then(() => { sessionStorage.clear(); location.reload(); });
+    
+    window.openChat = (id, title) => {
+      activeChatId = id; document.getElementById('chatTitle').innerText = title; openModal('chatModal');
+      if (chatUnsub) chatUnsub();
+      chatUnsub = onSnapshot(query(collection(db, "chats", activeChatId, "messages"), orderBy("time", "asc")), (snap) => {
+        const box = document.getElementById('chatBox'); box.innerHTML = "";
+        snap.forEach(m => {
+          const d = m.data();
+          const tag = d.senderId === OWNER_UID ? '<span class="owner-tag">OWNER</span>' : '';
+          box.innerHTML += `<div class="msg"><b>${d.sender}</b>${tag}: ${d.text}</div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+      });
+    };
+
+    window.sendMessage = async () => {
+      const v = document.getElementById('chatInput').value; if(!v) return;
+      await addDoc(collection(db, "chats", activeChatId, "messages"), { 
+        sender: sessionStorage.getItem('impersonating') === 'true' ? sessionStorage.getItem('targetName') : (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]), 
+        senderId: auth.currentUser.uid,
+        text: v, time: Date.now() 
+      });
+      document.getElementById('chatInput').value = "";
+    };
   </script>
 </body>
 </html>
