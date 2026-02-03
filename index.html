@@ -28,16 +28,25 @@
     }
 
     #adminModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 2000; overflow-y: auto; padding: 40px; box-sizing: border-box; }
-    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 1200px; margin: 0 auto; }
+    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 1400px; margin: 0 auto; }
     .admin-card { background: #111; border: 1px solid #ff9f1c; padding: 20px; border-radius: 12px; }
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 450px; display: flex; flex-direction: column; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; }
     input, textarea { margin: 10px 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
     #chatBox, #dmBox { height: 350px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
-    .msg { margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); display: flex; align-items: center; }
+    .msg { margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); display: flex; align-items: flex-start; position: relative; }
+    .msg-actions { display: flex; gap: 5px; margin-left: auto; }
+    .msg-actions button { padding: 4px 8px; font-size: 11px; }
     .broadcast-msg { background: linear-gradient(90deg, #ff4d4d, #ff9f1c, #ff4d4d); background-size: 200% auto; color: #000; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; animation: shimmer 3s infinite linear; margin-bottom: 10px; }
     @keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
-    .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+    .pfp-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; flex-shrink: 0; }
+    .user-detail { background: #1a1a1a; padding: 10px; margin: 10px 0; border-radius: 6px; border-left: 3px solid #ff9f1c; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .stat-box { background: #0a0a0a; padding: 10px; border-radius: 6px; text-align: center; }
+    .danger-btn { background: #dc2626 !important; color: white !important; }
+    .warning-btn { background: #f59e0b !important; color: white !important; }
+    .report-item { background: #1a0000; border-left: 3px solid #ff4d4d; padding: 10px; margin: 5px 0; border-radius: 4px; }
+    .report-resolved { opacity: 0.5; background: #001a00; border-left-color: #10b981; }
   </style>
 </head>
 <body>
@@ -62,15 +71,71 @@
   </div>
 
   <div id="adminModal">
-    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin: 0 auto 30px auto;">
-      <h1 style="color:#ff9f1c;">VAULT COMMAND CENTER</h1>
-      <button onclick="document.getElementById('adminModal').style.display='none'" style="background:red;">Exit</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1400px; margin: 0 auto 30px auto;">
+      <h1 style="color:#ff9f1c;">🔐 VAULT COMMAND CENTER</h1>
+      <button onclick="document.getElementById('adminModal').style.display='none'" class="danger-btn">Exit</button>
     </div>
     <div class="admin-grid">
-      <div class="admin-card"><h3>System Broadcast</h3><textarea id="broadcastInput" style="width:100%;" placeholder="Blast message..."></textarea><button onclick="sendBroadcast()" style="width:100%; background:#ff9f1c; color:000;">🚀 BLAST</button></div>
-      <div class="admin-card"><h3>User Lookup</h3><input type="text" id="lookupInput" placeholder="Username..."><button onclick="lookupUser()">Search</button><div id="lookupResult"></div></div>
-      <div class="admin-card" style="grid-column: span 2;"><h3>Reports</h3><div id="reportLogs" style="height:200px; overflow-y:auto; background:#000;"></div></div>
-      <div class="admin-card"><button onclick="clearGlobalChat()" style="background:red; width:100%;">☢ WIPE CHAT</button></div>
+      <!-- System Broadcast -->
+      <div class="admin-card">
+        <h3>📢 System Broadcast</h3>
+        <textarea id="broadcastInput" style="width:100%; height:80px;" placeholder="Broadcast message to all users..."></textarea>
+        <button onclick="sendBroadcast()" style="width:100%; background:#ff9f1c; color:000; margin-top:10px;">🚀 BROADCAST</button>
+      </div>
+
+      <!-- User Lookup -->
+      <div class="admin-card">
+        <h3>🔍 User Lookup</h3>
+        <input type="text" id="lookupInput" placeholder="Enter username..." style="width:100%;">
+        <button onclick="lookupUser()" style="width:100%; margin-top:10px;">Search User</button>
+        <div id="lookupResult"></div>
+      </div>
+
+      <!-- User Statistics -->
+      <div class="admin-card">
+        <h3>📊 Vault Statistics</h3>
+        <div id="statsDisplay" class="stat-grid">
+          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="totalUsers">0</div><div style="font-size:12px; opacity:0.7;">Total Users</div></div>
+          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="totalMessages">0</div><div style="font-size:12px; opacity:0.7;">Messages</div></div>
+          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="onlineUsers">0</div><div style="font-size:12px; opacity:0.7;">Online</div></div>
+          <div class="stat-box"><div style="font-size:24px; font-weight:bold;" id="totalReports">0</div><div style="font-size:12px; opacity:0.7;">Reports</div></div>
+        </div>
+      </div>
+
+      <!-- Message Management -->
+      <div class="admin-card">
+        <h3>💬 Message Management</h3>
+        <button onclick="viewAllMessages()" style="width:100%; margin:5px 0;">View All Messages</button>
+        <button onclick="clearGlobalChat()" class="danger-btn" style="width:100%; margin:5px 0;">☢️ Clear Global Chat</button>
+        <button onclick="clearAllDMs()" class="danger-btn" style="width:100%; margin:5px 0;">💣 Clear All DMs</button>
+      </div>
+
+      <!-- Reports Panel -->
+      <div class="admin-card" style="grid-column: span 2;">
+        <h3>🚨 Report Management</h3>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+          <button onclick="filterReports('all')" style="flex:1;">All</button>
+          <button onclick="filterReports('pending')" style="flex:1;">Pending</button>
+          <button onclick="filterReports('resolved')" style="flex:1;">Resolved</button>
+        </div>
+        <div id="reportLogs" style="height:300px; overflow-y:auto; background:#000; padding:10px; border-radius:6px;"></div>
+      </div>
+
+      <!-- User Actions -->
+      <div class="admin-card">
+        <h3>⚠️ User Actions</h3>
+        <input type="text" id="banUsername" placeholder="Username to ban..." style="width:100%;">
+        <button onclick="banUser()" class="danger-btn" style="width:100%; margin-top:10px;">🔨 Ban User</button>
+        <button onclick="viewBannedUsers()" class="warning-btn" style="width:100%; margin-top:10px;">View Banned</button>
+      </div>
+
+      <!-- System Actions -->
+      <div class="admin-card">
+        <h3>⚙️ System Actions</h3>
+        <button onclick="exportData()" style="width:100%; margin:5px 0;">📥 Export Data</button>
+        <button onclick="systemAnnouncement()" style="width:100%; margin:5px 0;">📣 Announcement</button>
+        <button onclick="viewSecurityLogs()" style="width:100%; margin:5px 0;">🛡️ Security Logs</button>
+      </div>
     </div>
   </div>
 
@@ -98,7 +163,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, where, or, and, writeBatch, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, orderBy, where, or, and, writeBatch, getDocs, deleteDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyDiRLEbHkE1oohVUlctHijJj0OGtB22csg", authDomain: "ahmed3z0.firebaseapp.com", projectId: "ahmed3z0", storageBucket: "ahmed3z0.firebasestorage.app", messagingSenderId: "512511154228", appId: "1:512511154228:web:8f97e9c75b3800f6d65261" };
     const app = initializeApp(firebaseConfig);
@@ -107,7 +172,7 @@
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1";
     const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/5029/5029253.png";
 
-    let currentDMRecipient = null, dmUnsub = null, isLoginMode = true;
+    let currentDMRecipient = null, dmUnsub = null, isLoginMode = true, replyingTo = null, currentReportFilter = 'all';
 
     // --- SECURITY TRIPWIRE ---
     window.tryOpenAdmin = async () => {
@@ -116,29 +181,286 @@
         await addDoc(collection(db, "chats", "global_room", "messages"), {
           sender: "SECURITY", text: `🤡 Look at this clown (${name}) trying to hack the Admin Panel!`, type: 'broadcast', time: Date.now()
         });
-        alert("ACCESS DENIED.");
+        await addDoc(collection(db, "security_logs"), {
+          type: "unauthorized_admin_access",
+          userId: auth.currentUser ? auth.currentUser.uid : "anonymous",
+          username: name,
+          time: Date.now()
+        });
+        alert("ACCESS DENIED. This incident has been logged.");
         return;
       }
       document.getElementById('adminModal').style.display='block';
+      loadAdminStats();
     };
 
+    // --- ADMIN STATS ---
+    async function loadAdminStats() {
+      try {
+        const usernamesSnap = await getDocs(collection(db, "usernames"));
+        document.getElementById('totalUsers').innerText = usernamesSnap.size;
+
+        const messagesSnap = await getDocs(collection(db, "chats", "global_room", "messages"));
+        document.getElementById('totalMessages').innerText = messagesSnap.size;
+
+        const reportsSnap = await getDocs(query(collection(db, "reports"), where("status", "==", "pending")));
+        document.getElementById('totalReports').innerText = reportsSnap.size;
+      } catch(e) { console.error(e); }
+    }
+
     // --- ADMIN ACTIONS ---
-    window.sendBroadcast = async () => { if(auth.currentUser.uid !== OWNER_UID) return; const txt = document.getElementById('broadcastInput').value; if(txt) await addDoc(collection(db, "chats", "global_room", "messages"), { sender: "SYSTEM", text: txt, type: 'broadcast', time: Date.now() }); document.getElementById('broadcastInput').value=""; };
-    window.lookupUser = async () => { if(auth.currentUser.uid !== OWNER_UID) return; const name = document.getElementById('lookupInput').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", name)); document.getElementById('lookupResult').innerText = s.exists() ? `UID: ${s.data().uid}` : "Not found."; };
+    window.sendBroadcast = async () => { 
+      if(auth.currentUser.uid !== OWNER_UID) return; 
+      const txt = document.getElementById('broadcastInput').value; 
+      if(txt) {
+        await addDoc(collection(db, "chats", "global_room", "messages"), { 
+          sender: "SYSTEM", 
+          text: txt, 
+          type: 'broadcast', 
+          time: Date.now() 
+        }); 
+        document.getElementById('broadcastInput').value="";
+        alert("Broadcast sent!");
+      }
+    };
+
+    window.lookupUser = async () => { 
+      if(auth.currentUser.uid !== OWNER_UID) return; 
+      const name = document.getElementById('lookupInput').value.toLowerCase().trim(); 
+      const s = await getDoc(doc(db, "usernames", name)); 
+      
+      if(!s.exists()) {
+        document.getElementById('lookupResult').innerHTML = "<div class='user-detail' style='color:#ff4d4d;'>❌ User not found</div>";
+        return;
+      }
+
+      const uid = s.data().uid;
+      const userDoc = await getDoc(doc(db, "users", uid));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+
+      // Get user's message count
+      const msgSnap = await getDocs(query(collection(db, "chats", "global_room", "messages"), where("senderId", "==", uid)));
+      const messageCount = msgSnap.size;
+
+      // Get user's friend count
+      const friendSnap = await getDocs(query(collection(db, "friendships"), where("users", "array-contains", uid)));
+      const friendCount = friendSnap.size;
+
+      // Check if banned
+      const banDoc = await getDoc(doc(db, "banned_users", uid));
+      const isBanned = banDoc.exists();
+
+      document.getElementById('lookupResult').innerHTML = `
+        <div class="user-detail">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+            <img src="${userData.photoURL || DEFAULT_PFP}" style="width:50px; height:50px; border-radius:50%;">
+            <div>
+              <div style="font-size:18px; font-weight:bold;">${name}</div>
+              <div style="font-size:12px; opacity:0.7;">UID: ${uid}</div>
+              ${isBanned ? '<div style="color:#ff4d4d; font-weight:bold;">🚫 BANNED</div>' : ''}
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-box"><div style="font-weight:bold;">${messageCount}</div><div style="font-size:11px;">Messages</div></div>
+            <div class="stat-box"><div style="font-weight:bold;">${friendCount}</div><div style="font-size:11px;">Friends</div></div>
+          </div>
+          <div style="margin-top:15px; display:flex; gap:5px;">
+            ${!isBanned ? `<button onclick="quickBanUser('${uid}', '${name}')" class="danger-btn" style="flex:1;">Ban</button>` : `<button onclick="unbanUser('${uid}')" class="warning-btn" style="flex:1;">Unban</button>`}
+            <button onclick="viewUserMessages('${uid}')" style="flex:1;">View Messages</button>
+          </div>
+        </div>
+      `;
+    };
+
+    window.quickBanUser = async (uid, username) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm(`Ban ${username}?`)) {
+        await setDoc(doc(db, "banned_users", uid), { username, bannedAt: Date.now(), bannedBy: OWNER_UID });
+        await addDoc(collection(db, "chats", "global_room", "messages"), {
+          sender: "SYSTEM", text: `🔨 ${username} has been banned from the vault.`, type: 'broadcast', time: Date.now()
+        });
+        alert(`${username} has been banned.`);
+        lookupUser();
+      }
+    };
+
+    window.unbanUser = async (uid) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      await deleteDoc(doc(db, "banned_users", uid));
+      alert("User unbanned.");
+      lookupUser();
+    };
+
+    window.banUser = async () => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      const username = document.getElementById('banUsername').value.toLowerCase().trim();
+      if(!username) return;
+      const userSnap = await getDoc(doc(db, "usernames", username));
+      if(!userSnap.exists()) {
+        alert("User not found!");
+        return;
+      }
+      const uid = userSnap.data().uid;
+      await quickBanUser(uid, username);
+      document.getElementById('banUsername').value = "";
+    };
+
+    window.clearGlobalChat = async () => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm("⚠️ DELETE ALL GLOBAL MESSAGES?")) {
+        const snapshot = await getDocs(collection(db, "chats", "global_room", "messages"));
+        const batch = writeBatch(db);
+        snapshot.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        alert("Global chat cleared!");
+      }
+    };
+
+    window.clearAllDMs = async () => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm("⚠️ DELETE ALL DMs? This cannot be undone!")) {
+        const snapshot = await getDocs(collection(db, "dms"));
+        const batch = writeBatch(db);
+        snapshot.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        alert("All DMs cleared!");
+      }
+    };
+
+    window.filterReports = (filter) => {
+      currentReportFilter = filter;
+      // Reports will auto-refresh via onSnapshot
+    };
+
+    window.resolveReport = async (reportId) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      await updateDoc(doc(db, "reports", reportId), { status: "resolved", resolvedAt: Date.now(), resolvedBy: OWNER_UID });
+    };
+
+    window.deleteReport = async (reportId) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      await deleteDoc(doc(db, "reports", reportId));
+    };
+
+    window.viewSecurityLogs = async () => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      const logs = await getDocs(query(collection(db, "security_logs"), orderBy("time", "desc"), limit(50)));
+      let html = "<div style='background:#000; padding:15px; border-radius:6px; max-height:400px; overflow-y:auto;'>";
+      logs.forEach(d => {
+        const log = d.data();
+        html += `<div style='margin:5px 0; padding:8px; background:#1a0000; border-radius:4px;'>
+          <div style='color:#ff9f1c;'>${new Date(log.time).toLocaleString()}</div>
+          <div>${log.type}: ${log.username}</div>
+        </div>`;
+      });
+      html += "</div>";
+      alert("Check console for security logs");
+      console.log(html);
+    };
+
+    // --- REPORT SYSTEM ---
+    window.reportMessage = async (msgId, senderId, senderName, text) => {
+      const reason = prompt(`Report message from ${senderName}?\nEnter reason:`);
+      if(!reason) return;
+      
+      await addDoc(collection(db, "reports"), {
+        messageId: msgId,
+        reportedUserId: senderId,
+        reportedUsername: senderName,
+        reportedBy: auth.currentUser.uid,
+        reportedByName: auth.currentUser.displayName,
+        messageText: text,
+        reason: reason,
+        status: "pending",
+        time: Date.now()
+      });
+      alert("Report submitted!");
+    };
+
+    // --- MESSAGE ACTIONS ---
+    window.deleteMessage = async (msgId, isGlobal = true) => {
+      if(!auth.currentUser) return;
+      
+      const msgRef = isGlobal ? 
+        doc(db, "chats", "global_room", "messages", msgId) : 
+        doc(db, "dms", msgId);
+      
+      const msgSnap = await getDoc(msgRef);
+      if(!msgSnap.exists()) return;
+      
+      const msgData = msgSnap.data();
+      
+      // Only owner or message sender can delete
+      if(auth.currentUser.uid !== OWNER_UID && auth.currentUser.uid !== msgData.senderId) {
+        alert("You can only delete your own messages!");
+        return;
+      }
+      
+      if(confirm("Delete this message?")) {
+        await deleteDoc(msgRef);
+      }
+    };
+
+    window.setReplyTo = (msgId, senderName) => {
+      replyingTo = { id: msgId, name: senderName };
+      document.getElementById('chatInput').placeholder = `Replying to ${senderName}...`;
+      document.getElementById('chatInput').focus();
+    };
+
+    window.cancelReply = () => {
+      replyingTo = null;
+      document.getElementById('chatInput').placeholder = "Message...";
+    };
 
     // --- AUTH & CORE ---
-    onAuthStateChanged(auth, u => {
+    onAuthStateChanged(auth, async u => {
       if(u) {
+        // Check if banned
+        const banDoc = await getDoc(doc(db, "banned_users", u.uid));
+        if(banDoc.exists()) {
+          alert("You have been banned from The Secret Kiwi Vault.");
+          await signOut(auth);
+          return;
+        }
+
         document.getElementById('loggedInUI').style.display = 'flex';
         document.getElementById('userGreeting').innerText = u.displayName;
         document.getElementById('navPfp').src = u.photoURL || DEFAULT_PFP;
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
+        
         if(u.uid === OWNER_UID) {
           document.getElementById('adminBtn').style.display = 'block';
+          
+          // Real-time report monitoring
           onSnapshot(query(collection(db, "reports"), orderBy("time", "desc")), s => {
-            let b = document.getElementById('reportLogs'); b.innerHTML = "";
-            s.forEach(d => { const r = d.data(); b.innerHTML += `<div style="color:red; margin-bottom:5px;">[ALERT] ${r.text}</div>`; });
+            let b = document.getElementById('reportLogs'); 
+            b.innerHTML = "";
+            let count = 0;
+            s.forEach(d => { 
+              const r = d.data();
+              if(currentReportFilter === 'pending' && r.status !== 'pending') return;
+              if(currentReportFilter === 'resolved' && r.status !== 'resolved') return;
+              
+              const isResolved = r.status === 'resolved';
+              b.innerHTML += `<div class="report-item ${isResolved ? 'report-resolved' : ''}">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                  <div style="flex:1;">
+                    <div style="color:#ff9f1c; font-weight:bold;">Report from ${r.reportedByName}</div>
+                    <div style="margin:5px 0;">Target: <b>${r.reportedUsername}</b></div>
+                    <div style="font-size:12px; opacity:0.8;">Message: "${r.messageText}"</div>
+                    <div style="font-size:12px; opacity:0.8;">Reason: ${r.reason}</div>
+                    <div style="font-size:11px; opacity:0.6; margin-top:5px;">${new Date(r.time).toLocaleString()}</div>
+                  </div>
+                  <div style="display:flex; gap:5px; flex-direction:column;">
+                    ${!isResolved ? `<button onclick="resolveReport('${d.id}')" style="font-size:11px; padding:4px 8px;">✓ Resolve</button>` : ''}
+                    <button onclick="deleteReport('${d.id}')" class="danger-btn" style="font-size:11px; padding:4px 8px;">Delete</button>
+                  </div>
+                </div>
+              </div>`;
+              count++;
+            });
+            if(count === 0) b.innerHTML = "<div style='text-align:center; opacity:0.5; padding:20px;'>No reports</div>";
           });
         }
         setupSocial();
@@ -155,14 +477,33 @@
           } else {
             const tag = d.senderId === OWNER_UID ? `<span class="owner-tag">[OWNER]</span>` : "";
             const pfp = `<img src="${d.photoURL || DEFAULT_PFP}" class="pfp-small">`;
-            b.innerHTML += `<div class="msg">${pfp}<div>${tag}<b>${d.sender}:</b> ${d.text}</div></div>`;
+            const isOwner = auth.currentUser && auth.currentUser.uid === OWNER_UID;
+            const isSender = auth.currentUser && auth.currentUser.uid === d.senderId;
+            
+            const replyInfo = d.replyTo ? `<div style="font-size:11px; opacity:0.6; margin-bottom:3px;">↩️ Reply to ${d.replyTo.name}</div>` : '';
+            
+            b.innerHTML += `<div class="msg">
+              ${pfp}
+              <div style="flex:1;">
+                ${replyInfo}
+                ${tag}<b>${d.sender}:</b> ${d.text}
+              </div>
+              <div class="msg-actions">
+                <button onclick="setReplyTo('${m.id}', '${d.sender}')">↩️</button>
+                ${(isOwner || isSender) ? `<button onclick="deleteMessage('${m.id}', true)" class="danger-btn">🗑️</button>` : ''}
+                ${!isSender ? `<button onclick="reportMessage('${m.id}', '${d.senderId}', '${d.sender}', '${d.text.replace(/'/g, "\\'")}')">⚠️</button>` : ''}
+              </div>
+            </div>`;
           }
-        }); b.scrollTop = b.scrollHeight;
+        }); 
+        b.scrollTop = b.scrollHeight;
       });
     };
 
     window.startDM = (uid, n) => {
-      currentDMRecipient = uid; document.getElementById('dmTitle').innerText = n; showTab('dm'); 
+      currentDMRecipient = uid; 
+      document.getElementById('dmTitle').innerText = n; 
+      showTab('dm'); 
       if(dmUnsub) dmUnsub();
       const dmQuery = query(collection(db, "dms"), or(and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)), and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))), orderBy("time", "asc"));
       dmUnsub = onSnapshot(dmQuery, s => {
@@ -170,14 +511,54 @@
         s.forEach(m => { 
           const d = m.data(); 
           const tag = d.senderId === OWNER_UID ? `<span class="owner-tag">[OWNER]</span>` : "";
-          b.innerHTML += `<div class="msg"><div>${tag}<b>${d.sender}:</b> ${d.text}</div></div>`; 
+          const isOwner = auth.currentUser && auth.currentUser.uid === OWNER_UID;
+          const isSender = auth.currentUser && auth.currentUser.uid === d.senderId;
+          
+          b.innerHTML += `<div class="msg">
+            <div style="flex:1;">${tag}<b>${d.sender}:</b> ${d.text}</div>
+            <div class="msg-actions">
+              ${(isOwner || isSender) ? `<button onclick="deleteMessage('${m.id}', false)" class="danger-btn">🗑️</button>` : ''}
+            </div>
+          </div>`; 
         });
         b.scrollTop = b.scrollHeight;
       });
     };
 
-    window.sendMessage = async () => { const v = document.getElementById('chatInput').value; if(v) await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, photoURL: auth.currentUser.photoURL || DEFAULT_PFP, text: v, time: Date.now() }); document.getElementById('chatInput').value=""; };
-    window.sendDM = async () => { const v = document.getElementById('dmInput').value; if(v && currentDMRecipient) await addDoc(collection(db, "dms"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, toId: currentDMRecipient, text: v, time: Date.now() }); document.getElementById('dmInput').value = ""; };
+    window.sendMessage = async () => { 
+      const v = document.getElementById('chatInput').value; 
+      if(v) {
+        const msgData = { 
+          senderId: auth.currentUser.uid, 
+          sender: auth.currentUser.displayName, 
+          photoURL: auth.currentUser.photoURL || DEFAULT_PFP, 
+          text: v, 
+          time: Date.now() 
+        };
+        
+        if(replyingTo) {
+          msgData.replyTo = replyingTo;
+        }
+        
+        await addDoc(collection(db, "chats", "global_room", "messages"), msgData); 
+        document.getElementById('chatInput').value="";
+        cancelReply();
+      }
+    };
+
+    window.sendDM = async () => { 
+      const v = document.getElementById('dmInput').value; 
+      if(v && currentDMRecipient) {
+        await addDoc(collection(db, "dms"), { 
+          senderId: auth.currentUser.uid, 
+          sender: auth.currentUser.displayName, 
+          toId: currentDMRecipient, 
+          text: v, 
+          time: Date.now() 
+        }); 
+        document.getElementById('dmInput').value = ""; 
+      }
+    };
 
     window.showTab = t => { ['global','friends','dm','requests'].forEach(v => { document.getElementById(`view-${v}`).style.display='none'; }); document.getElementById(`view-${t}`).style.display='block'; if(t==='global') openChat(); };
     window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
@@ -185,7 +566,19 @@
     window.openModal = id => document.getElementById(id).style.display = 'flex';
     window.closeModal = id => document.getElementById(id).style.display = 'none';
     window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? "Login" : "Sign Up"; document.getElementById('regName').style.display = isLoginMode ? "none" : "block"; };
-    window.handleAuth = async () => { const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value; try { if(isLoginMode) { await signInWithEmailAndPassword(auth, e, p); } else { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); } location.reload(); } catch(err) { alert(err.message); } };
+    window.handleAuth = async () => { 
+      const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value; 
+      try { 
+        if(isLoginMode) { 
+          await signInWithEmailAndPassword(auth, e, p); 
+        } else { 
+          const res = await createUserWithEmailAndPassword(auth, e, p); 
+          await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP }); 
+          await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); 
+        } 
+        location.reload(); 
+      } catch(err) { alert(err.message); } 
+    };
     window.updateUserProfile = async () => { await updateProfile(auth.currentUser, { displayName: document.getElementById('setDisplayName').value, photoURL: document.getElementById('setPfpUrl').value }); location.reload(); };
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme')==='dark'?'light':'dark'); };
     
