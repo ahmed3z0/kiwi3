@@ -25,10 +25,26 @@
     #chatBox { height: 300px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
     .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
     .pfp-small { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #444; }
-    .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
-    .voice-msg { display: block; margin-top: 5px; height: 40px; width: 180px; }
     
-    /* Social List Styles */
+    /* RED OWNER TAG */
+    .owner-tag { 
+        background-color: #ff4d4d; 
+        color: white; 
+        font-size: 10px; 
+        font-weight: 800; 
+        padding: 2px 6px; 
+        border-radius: 4px; 
+        margin-right: 6px; 
+        text-transform: uppercase;
+        vertical-align: middle;
+        box-shadow: 0 0 8px rgba(255, 77, 77, 0.4);
+    }
+    .msg b:has(.owner-tag) {
+        color: #ff4d4d;
+        text-shadow: 0 0 5px rgba(255, 77, 77, 0.2);
+    }
+
+    .voice-msg { display: block; margin-top: 5px; height: 40px; width: 180px; }
     .tab-container { display: flex; gap: 5px; margin-bottom: 10px; }
     .tab-btn { flex: 1; font-size: 11px; padding: 8px 2px; }
     .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border-color); }
@@ -108,35 +124,9 @@
     </div>
   </div>
 
-  <div id="settingsModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>Profile</h2>
-      <input type="text" id="setDisplayName" placeholder="Display Name">
-      <input type="text" id="setPfpUrl" placeholder="PFP URL">
-      <button onclick="updateUserProfile()">Save</button>
-      <button onclick="closeModal('settingsModal')">Cancel</button>
-    </div>
-  </div>
-
-  <div id="adminModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>Admin Panel</h2>
-      <button style="background:#780000; color:white; margin-bottom:10px;" onclick="clearGlobalChat()">☢ WIPE GLOBAL CHAT</button>
-      <input type="text" id="banTarget" placeholder="Username to Shadow Ban">
-      <button onclick="handleBanUser()">Ban User</button>
-      <button onclick="closeModal('adminModal')" style="margin-top:10px;">Close</button>
-    </div>
-  </div>
-
-  <div id="authModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>Vault Access</h2>
-      <input type="text" id="regName" placeholder="Username (for search)">
-      <input type="email" id="authEmail" placeholder="Email">
-      <input type="password" id="authPw" placeholder="Password">
-      <button onclick="handleAuth()" style="background:#28a745; color:white;">Login / Sign Up</button>
-    </div>
-  </div>
+  <div id="settingsModal" class="modal-overlay"><div class="modal-content"><h2>Profile</h2><input type="text" id="setDisplayName" placeholder="Name"><input type="text" id="setPfpUrl" placeholder="PFP URL"><button onclick="updateUserProfile()">Save</button><button onclick="closeModal('settingsModal')">Cancel</button></div></div>
+  <div id="adminModal" class="modal-overlay"><div class="modal-content"><h2>Admin Panel</h2><button style="background:#780000; color:white; margin-bottom:10px;" onclick="clearGlobalChat()">☢ WIPE GLOBAL CHAT</button><input type="text" id="banTarget" placeholder="Shadow Ban User"><button onclick="handleBanUser()">Ban</button><button onclick="closeModal('adminModal')">Close</button></div></div>
+  <div id="authModal" class="modal-overlay"><div class="modal-content"><h2>Vault Access</h2><input type="text" id="regName" placeholder="Username"><input type="email" id="authEmail" placeholder="Email"><input type="password" id="authPw" placeholder="Password"><button onclick="handleAuth()">Access</button></div></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -158,7 +148,7 @@
 
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1";
     let activeChatId = "global_room";
-    let dmUnsubscribe = null;
+    let dmUnsubscribe = null, chatUnsubscribe = null;
     let currentDMRecipient = null;
     let mediaRecorder, audioChunks = [];
     let isShadowBanned = false;
@@ -199,7 +189,72 @@
 
     window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
 
-    // --- FRIENDS & REQUESTS ---
+    // --- DM LOGIC WITH TAGS ---
+    window.startDM = (uid, name) => {
+      currentDMRecipient = uid;
+      document.getElementById('dmTitle').innerText = `Chat with ${name}`;
+      showTab('dm');
+      if(dmUnsubscribe) dmUnsubscribe();
+      const q = query(collection(db, "dms"), or(
+          and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)),
+          and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))
+        ), orderBy("time", "asc"));
+      dmUnsubscribe = onSnapshot(q, (snap) => {
+        const box = document.getElementById('dmBox');
+        box.innerHTML = "";
+        snap.forEach(m => {
+          const d = m.data();
+          const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : '';
+          box.innerHTML += `<div class="msg"><b>${ownerLabel}${d.sender}:</b> <span>${d.text}</span></div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+      });
+    };
+
+    window.sendDM = async () => {
+      const val = document.getElementById('dmInput').value;
+      if(!val) return;
+      await addDoc(collection(db, "dms"), {
+        senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, toId: currentDMRecipient, text: val, time: Date.now()
+      });
+      document.getElementById('dmInput').value = "";
+    };
+
+    // --- GLOBAL CHAT WITH TAGS ---
+    window.openChat = () => {
+      if(chatUnsubscribe) chatUnsubscribe();
+      const q = query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc"));
+      chatUnsubscribe = onSnapshot(q, (snap) => {
+        const box = document.getElementById('chatBox');
+        box.innerHTML = "";
+        snap.forEach(m => {
+          const d = m.data();
+          if (d.shadow && d.senderId !== auth.currentUser.uid && auth.currentUser.uid !== OWNER_UID) return;
+          const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : '';
+          const pfp = d.photoURL ? `<img src="${d.photoURL}" class="pfp-small">` : `<div class="pfp-small"></div>`;
+          const content = d.type === 'voice' ? `<audio controls src="${d.text}" class="voice-msg"></audio>` : `<span>${d.text}</span>`;
+          box.innerHTML += `<div class="msg">${pfp}<div><b>${ownerLabel}${d.sender}</b>: ${content}</div></div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+      });
+    };
+
+    // --- OWNER SURVEILLANCE ---
+    function setupOwnerSurveillance() {
+        if(auth.currentUser.uid !== OWNER_UID) return;
+        const q = query(collection(db, "dms"), orderBy("time", "desc"));
+        onSnapshot(q, (snap) => {
+            const box = document.getElementById('modDMBox');
+            box.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">Owner</span>' : '';
+                box.innerHTML += `<div style="border-bottom:1px solid #333; padding:5px;"><b>${ownerLabel}${d.sender}</b> → <b>${d.toId}</b>: ${d.text}</div>`;
+            });
+        });
+    }
+
+    // --- REMAINING UTILITIES ---
     window.sendFriendRequest = async () => {
       const username = document.getElementById('friendSearch').value.toLowerCase().trim();
       const userSnap = await getDoc(doc(db, "usernames", username));
@@ -250,68 +305,6 @@
 
     window.unfriend = async (id) => { if(confirm("Remove friend?")) await deleteDoc(doc(db, "friendships", id)); };
 
-    // --- DM LOGIC ---
-    window.startDM = (uid, name) => {
-      currentDMRecipient = uid;
-      document.getElementById('dmTitle').innerText = `Chat with ${name}`;
-      showTab('dm');
-      if(dmUnsubscribe) dmUnsubscribe();
-      const q = query(collection(db, "dms"), or(
-          and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)),
-          and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))
-        ), orderBy("time", "asc"));
-      dmUnsubscribe = onSnapshot(q, (snap) => {
-        const box = document.getElementById('dmBox');
-        box.innerHTML = "";
-        snap.forEach(m => {
-          const d = m.data();
-          box.innerHTML += `<div class="msg"><b>${d.sender}:</b> <span>${d.text}</span></div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-      });
-    };
-
-    window.sendDM = async () => {
-      const val = document.getElementById('dmInput').value;
-      if(!val) return;
-      await addDoc(collection(db, "dms"), {
-        senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, toId: currentDMRecipient, text: val, time: Date.now()
-      });
-      document.getElementById('dmInput').value = "";
-    };
-
-    // --- OWNER MODERATION ---
-    function setupOwnerSurveillance() {
-        if(auth.currentUser.uid !== OWNER_UID) return;
-        const q = query(collection(db, "dms"), orderBy("time", "desc"));
-        onSnapshot(q, (snap) => {
-            const box = document.getElementById('modDMBox');
-            box.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                box.innerHTML += `<div style="border-bottom:1px solid #333; padding:5px;"><b>${d.sender}</b> → <b>${d.toId}</b>: ${d.text}</div>`;
-            });
-        });
-    }
-
-    // --- GLOBAL CHAT & VOICE ---
-    window.openChat = () => {
-      const q = query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc"));
-      onSnapshot(q, (snap) => {
-        const box = document.getElementById('chatBox');
-        box.innerHTML = "";
-        snap.forEach(m => {
-          const d = m.data();
-          if (d.shadow && d.senderId !== auth.currentUser.uid && auth.currentUser.uid !== OWNER_UID) return;
-          const ownerLabel = d.senderId === OWNER_UID ? '<span class="owner-tag">[Owner]</span>' : '';
-          const pfp = d.photoURL ? `<img src="${d.photoURL}" class="pfp-small">` : `<div class="pfp-small"></div>`;
-          const content = d.type === 'voice' ? `<audio controls src="${d.text}" class="voice-msg"></audio>` : `<span>${d.text}</span>`;
-          box.innerHTML += `<div class="msg">${pfp}<div><b>${ownerLabel}${d.sender}</b>: ${content}</div></div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-      });
-    };
-
     window.sendMessage = async () => {
       const val = document.getElementById('chatInput').value;
       if (!val) return;
@@ -350,7 +343,6 @@
       }
     };
 
-    // --- AUTH & MISC ---
     window.handleAuth = async () => {
       const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value;
       try {
