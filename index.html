@@ -26,12 +26,17 @@
     .msg { margin-bottom: 12px; font-size: 14px; padding: 5px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
     .pfp-small { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #444; }
     .owner-tag { color: #ff4d4d; font-weight: bold; font-size: 11px; margin-right: 4px; }
-    .voice-msg { display: block; margin-top: 5px; height: 35px; width: 100%; }
-    .recording-active { background: #ff4d4d !important; animation: pulse 1s infinite; }
+    .voice-msg { display: block; margin-top: 5px; height: 40px; width: 200px; }
+    
+    .recording-active { 
+        background: #ff4d4d !important; 
+        color: white !important;
+        animation: pulse 1.5s infinite; 
+    }
     
     #adminBtn { display: none; background: #ff9f1c; color: black; border: none; }
     .nuke-btn { background: #780000; color: white; padding: 12px; margin-top: 10px; border: none; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
   </style>
 </head>
 <body>
@@ -139,21 +144,14 @@
       if (user) {
         document.getElementById('loggedInUI').style.display = 'flex';
         document.getElementById('userGreeting').innerText = user.displayName;
-        
-        // Handle nav pfp
         const navPfp = document.getElementById('navPfp');
         if(user.photoURL) { navPfp.src = user.photoURL; navPfp.style.display = 'block'; }
-        
-        // Fill settings fields
         document.getElementById('setDisplayName').value = user.displayName || "";
         document.getElementById('setPfpUrl').value = user.photoURL || "";
-
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
-
         const banDoc = await getDoc(doc(db, "banned_users", user.uid));
         if (banDoc.exists()) isShadowBanned = true;
-
         if(user.uid === OWNER_UID) document.getElementById('adminBtn').style.display = 'block';
         await setDoc(doc(db, "online_status", user.uid), { active: true });
       } else {
@@ -232,30 +230,49 @@
       await batch.commit();
     };
 
+    // --- FIXED VOICE RECORDING LOGIC ---
     window.toggleRecording = async () => {
+      const recordBtn = document.getElementById('recordBtn');
+      
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-        mediaRecorder.onstop = () => {
-          const reader = new FileReader();
-          reader.readAsDataURL(new Blob(audioChunks));
-          reader.onloadend = () => addDoc(collection(db, "chats", activeChatId, "messages"), {
-            senderId: auth.currentUser.uid, 
-            sender: auth.currentUser.displayName, 
-            photoURL: auth.currentUser.photoURL || "",
-            text: reader.result, 
-            type: 'voice', 
-            time: Date.now(), 
-            shadow: isShadowBanned
-          });
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
           audioChunks = [];
-        };
-        mediaRecorder.start();
-        document.getElementById('recordBtn').classList.add('recording-active');
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = async () => {
+              const base64Audio = reader.result;
+              await addDoc(collection(db, "chats", activeChatId, "messages"), {
+                senderId: auth.currentUser.uid, 
+                sender: auth.currentUser.displayName || "User", 
+                photoURL: auth.currentUser.photoURL || "",
+                text: base64Audio, 
+                type: 'voice', 
+                time: Date.now(), 
+                shadow: isShadowBanned
+              });
+            };
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          recordBtn.classList.add('recording-active');
+          recordBtn.innerText = "🛑";
+        } catch (err) {
+          alert("Microphone error: " + err.message);
+        }
       } else {
         mediaRecorder.stop();
-        document.getElementById('recordBtn').classList.remove('recording-active');
+        recordBtn.classList.remove('recording-active');
+        recordBtn.innerText = "🎤";
       }
     };
 
