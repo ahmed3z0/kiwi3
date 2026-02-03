@@ -90,24 +90,48 @@
     const OWNER_UID = "QgpYq1oAXfXOEnEHqMNnKWWFcRi1";
     const DEFAULT_PFP = "https://cdn-icons-png.flaticon.com/512/5029/5029253.png";
 
+    let currentDMRecipient = null, dmUnsub = null, isLoginMode = true;
+
     // --- SECURITY TRIPWIRE ---
     window.tryOpenAdmin = async () => {
       if (!auth.currentUser || auth.currentUser.uid !== OWNER_UID) {
         const name = auth.currentUser ? auth.currentUser.displayName : "Unknown Hacker";
+        // Public shame broadcast
         await addDoc(collection(db, "chats", "global_room", "messages"), {
-          sender: "SECURITY", text: `🤡 Look at this clown (${name}) trying to hack the Admin Panel!`, type: 'broadcast', time: Date.now()
+          sender: "SECURITY", 
+          text: `🤡 Look at this clown (${name}) trying to hack the Admin Panel!`, 
+          type: 'broadcast', 
+          time: Date.now()
         });
-        alert("ACCESS DENIED: Nice try, clown.");
+        alert("ACCESS DENIED: Your attempt has been logged and broadcasted to the server.");
         return;
       }
       document.getElementById('adminModal').style.display='block';
     };
 
-    // --- ADMIN ACTIONS (Protected) ---
+    // --- ADMIN ACTIONS ---
     window.sendBroadcast = async () => { if(auth.currentUser.uid !== OWNER_UID) return; const txt = document.getElementById('broadcastInput').value; if(txt) await addDoc(collection(db, "chats", "global_room", "messages"), { sender: "SYSTEM", text: txt, type: 'broadcast', time: Date.now() }); document.getElementById('broadcastInput').value=""; };
     window.lookupUser = async () => { if(auth.currentUser.uid !== OWNER_UID) return; const name = document.getElementById('lookupInput').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", name)); document.getElementById('lookupResult').innerText = s.exists() ? `UID: ${s.data().uid}` : "Not found."; };
 
-    // --- GLOBAL CHAT ---
+    // --- CORE SYSTEMS ---
+    onAuthStateChanged(auth, u => {
+      if(u) {
+        document.getElementById('loggedInUI').style.display = 'flex';
+        document.getElementById('userGreeting').innerText = u.displayName;
+        document.getElementById('navPfp').src = u.photoURL || DEFAULT_PFP;
+        document.getElementById('kiwiImage').style.display = 'inline-block';
+        closeModal('authModal');
+        if(u.uid === OWNER_UID) {
+          document.getElementById('adminBtn').style.display = 'block';
+          onSnapshot(query(collection(db, "reports"), orderBy("time", "desc")), s => {
+            let b = document.getElementById('reportLogs'); b.innerHTML = "";
+            s.forEach(d => { const r = d.data(); b.innerHTML += `<div style="color:red; margin-bottom:5px;">[ALERT] ${r.text}</div>`; });
+          });
+        }
+        setupSocial();
+      } else openModal('authModal');
+    });
+
     window.openChat = () => {
       onSnapshot(query(collection(db, "chats", "global_room", "messages"), orderBy("time", "asc")), s => {
         let b = document.getElementById('chatBox'); b.innerHTML = "";
@@ -119,31 +143,41 @@
       });
     };
 
-    // --- AUTH & MISC ---
-    onAuthStateChanged(auth, u => {
-      if(u) {
-        document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('userGreeting').innerText = u.displayName;
-        document.getElementById('navPfp').src = u.photoURL || DEFAULT_PFP;
-        document.getElementById('kiwiImage').style.display = 'inline-block';
-        closeModal('authModal');
-        if(u.uid === OWNER_UID) document.getElementById('adminBtn').style.display = 'block';
-        setupSocial();
-      } else openModal('authModal');
-    });
+    window.startDM = (uid, n) => {
+      currentDMRecipient = uid; 
+      document.getElementById('dmTitle').innerText = n; 
+      showTab('dm'); 
+      if(dmUnsub) dmUnsub();
+      // Proper private message query
+      const dmQuery = query(
+        collection(db, "dms"),
+        or(
+          and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)),
+          and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))
+        ),
+        orderBy("time", "asc")
+      );
+      dmUnsub = onSnapshot(dmQuery, s => {
+        let b = document.getElementById('dmBox'); b.innerHTML = "";
+        s.forEach(m => { const d = m.data(); b.innerHTML += `<div class="msg"><b>${d.sender}:</b> ${d.text}</div>`; });
+        b.scrollTop = b.scrollHeight;
+      });
+    };
 
-    window.sendMessage = async () => { const v = document.getElementById('chatInput').value; if(v) await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, photoURL: auth.currentUser.photoURL || DEFAULT_PFP, text: v, time: Date.now() }); document.getElementById('chatInput').value=""; };
-    window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? "Login" : "Sign Up"; document.getElementById('regName').style.display = isLoginMode ? "none" : "block"; };
-    window.handleAuth = async () => { const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value; try { if(isLoginMode) { await signInWithEmailAndPassword(auth, e, p); } else { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); } location.reload(); } catch(err) { alert(err.message); } };
+    window.sendMessage = async () => { const v = document.getElementById('chatInput').value; if(v) await addDoc(collection(db, "chats", "global_room", "messages"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, text: v, time: Date.now() }); document.getElementById('chatInput').value=""; };
+    window.sendDM = async () => { const v = document.getElementById('dmInput').value; if(v && currentDMRecipient) await addDoc(collection(db, "dms"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, toId: currentDMRecipient, text: v, time: Date.now() }); document.getElementById('dmInput').value = ""; };
+
+    // --- SHARED HELPERS ---
+    window.showTab = t => { ['global','friends','dm','requests'].forEach(v => { document.getElementById(`view-${v}`).style.display='none'; }); document.getElementById(`view-${t}`).style.display='block'; if(t==='global') openChat(); };
+    window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
     window.handleLogout = () => signOut(auth).then(()=>location.reload());
     window.openModal = id => document.getElementById(id).style.display = 'flex';
     window.closeModal = id => document.getElementById(id).style.display = 'none';
-    window.showTab = t => { ['global','friends','dm','requests'].forEach(v => { document.getElementById(`view-${v}`).style.display='none'; }); document.getElementById(`view-${t}`).style.display='block'; if(t==='global') openChat(); };
-    window.openSocialModal = () => { openModal('friendsModal'); showTab('global'); };
+    window.toggleAuthMode = () => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? "Login" : "Sign Up"; document.getElementById('regName').style.display = isLoginMode ? "none" : "block"; };
+    window.handleAuth = async () => { const e = document.getElementById('authEmail').value, p = document.getElementById('authPw').value, n = document.getElementById('regName').value; try { if(isLoginMode) { await signInWithEmailAndPassword(auth, e, p); } else { const res = await createUserWithEmailAndPassword(auth, e, p); await updateProfile(res.user, { displayName: n, photoURL: DEFAULT_PFP }); await setDoc(doc(db, "usernames", n.toLowerCase()), { uid: res.user.uid }); } location.reload(); } catch(err) { alert(err.message); } };
     window.updateUserProfile = async () => { await updateProfile(auth.currentUser, { displayName: document.getElementById('setDisplayName').value, photoURL: document.getElementById('setPfpUrl').value }); location.reload(); };
     window.toggleTheme = () => { const d = document.documentElement; d.setAttribute('data-theme', d.getAttribute('data-theme')==='dark'?'light':'dark'); };
     
-    // (Social/DMs Restored)
     function setupSocial() {
       onSnapshot(query(collection(db, "friend_requests"), where("toUid", "==", auth.currentUser.uid)), s => {
         let c = document.getElementById('requestsList'); c.innerHTML = "";
@@ -152,19 +186,9 @@
       });
       onSnapshot(query(collection(db, "friendships"), where("users", "array-contains", auth.currentUser.uid)), s => {
         let c = document.getElementById('friendsList'); c.innerHTML = "";
-        s.forEach(d => { const dat = d.data(); const fUid = dat.users.find(u => u !== auth.currentUser.uid); const fName = dat.names.find(n => n !== auth.currentUser.displayName); c.innerHTML += `<div><b>${fName}</b> <button onclick="startDM('${fUid}','${fName}')">DM</button></div>`; });
+        s.forEach(d => { const dat = d.data(); const fUid = dat.users.find(u => u !== auth.currentUser.uid); const fName = dat.names.find(n => n !== auth.currentUser.displayName); c.innerHTML += `<div style="padding:5px; border-bottom:1px solid #333;"><b>${fName}</b> <button onclick="startDM('${fUid}','${fName}')">DM</button></div>`; });
       });
     }
-    window.startDM = (uid, n) => {
-      currentDMRecipient = uid; document.getElementById('dmTitle').innerText = n; showTab('dm'); 
-      if(dmUnsub) dmUnsub();
-      dmUnsub = onSnapshot(query(collection(db, "dms"), or(and(where("senderId", "==", auth.currentUser.uid), where("toId", "==", uid)), and(where("senderId", "==", uid), where("toId", "==", auth.currentUser.uid))), orderBy("time", "asc")), s => {
-        let b = document.getElementById('dmBox'); b.innerHTML = "";
-        s.forEach(m => { const d = m.data(); b.innerHTML += `<div class="msg"><b>${d.sender}:</b> ${d.text}</div>`; });
-        b.scrollTop = b.scrollHeight;
-      });
-    };
-    window.sendDM = async () => { const v = document.getElementById('dmInput').value; if(v) await addDoc(collection(db, "dms"), { senderId: auth.currentUser.uid, sender: auth.currentUser.displayName, toId: currentDMRecipient, text: v, time: Date.now() }); document.getElementById('dmInput').value = ""; };
     window.sendFriendRequest = async () => { const n = document.getElementById('friendSearch').value.toLowerCase().trim(); const s = await getDoc(doc(db, "usernames", n)); if(s.exists()) { await setDoc(doc(db, "friend_requests", `${auth.currentUser.uid}_${s.data().uid}`), { fromUid: auth.currentUser.uid, fromName: auth.currentUser.displayName, toUid: s.data().uid }); alert("Sent!"); } };
     window.acceptFriend = async (uid, n, rid) => { const b = writeBatch(db); b.set(doc(db, "friendships", `${auth.currentUser.uid}_${uid}`), { users: [auth.currentUser.uid, uid], names: [auth.currentUser.displayName, n] }); b.delete(doc(db, "friend_requests", rid)); await b.commit(); };
   </script>
