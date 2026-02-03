@@ -228,6 +228,12 @@
     window.lookupUser = async () => { 
       if(auth.currentUser.uid !== OWNER_UID) return; 
       const name = document.getElementById('lookupInput').value.toLowerCase().trim(); 
+      
+      if(!name) {
+        document.getElementById('lookupResult').innerHTML = "<div class='user-detail' style='color:#ff9f1c;'>⚠️ Enter a username</div>";
+        return;
+      }
+      
       const s = await getDoc(doc(db, "usernames", name)); 
       
       if(!s.exists()) {
@@ -236,8 +242,6 @@
       }
 
       const uid = s.data().uid;
-      const userDoc = await getDoc(doc(db, "users", uid));
-      const userData = userDoc.exists() ? userDoc.data() : {};
 
       // Get user's message count
       const msgSnap = await getDocs(query(collection(db, "chats", "global_room", "messages"), where("senderId", "==", uid)));
@@ -247,28 +251,46 @@
       const friendSnap = await getDocs(query(collection(db, "friendships"), where("users", "array-contains", uid)));
       const friendCount = friendSnap.size;
 
-      // Check if banned
+      // Check status
       const banDoc = await getDoc(doc(db, "banned_users", uid));
       const isBanned = banDoc.exists();
+      
+      const muteDoc = await getDoc(doc(db, "muted_users", uid));
+      const isMuted = muteDoc.exists();
+
+      // Get user data from auth profile
+      let photoURL = DEFAULT_PFP;
+      let displayName = name;
+      
+      // Try to get from recent messages
+      if(msgSnap.size > 0) {
+        const lastMsg = msgSnap.docs[msgSnap.docs.length - 1].data();
+        if(lastMsg.photoURL) photoURL = lastMsg.photoURL;
+        if(lastMsg.sender) displayName = lastMsg.sender;
+      }
 
       document.getElementById('lookupResult').innerHTML = `
         <div class="user-detail">
           <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-            <img src="${userData.photoURL || DEFAULT_PFP}" style="width:50px; height:50px; border-radius:50%;">
+            <img src="${photoURL}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
             <div>
-              <div style="font-size:18px; font-weight:bold;">${name}</div>
+              <div style="font-size:18px; font-weight:bold;">${displayName}</div>
               <div style="font-size:12px; opacity:0.7;">UID: ${uid}</div>
-              ${isBanned ? '<div style="color:#ff4d4d; font-weight:bold;">🚫 BANNED</div>' : ''}
+              ${isBanned ? '<div style="color:#ff4d4d; font-weight:bold; margin-top:3px;">🚫 BANNED</div>' : ''}
+              ${isMuted ? '<div style="color:#f59e0b; font-weight:bold; margin-top:3px;">🔇 MUTED</div>' : ''}
             </div>
           </div>
           <div class="stat-grid">
             <div class="stat-box"><div style="font-weight:bold;">${messageCount}</div><div style="font-size:11px;">Messages</div></div>
             <div class="stat-box"><div style="font-weight:bold;">${friendCount}</div><div style="font-size:11px;">Friends</div></div>
           </div>
-          <div style="margin-top:15px; display:flex; gap:5px;">
-            ${!isBanned ? `<button onclick="quickBanUser('${uid}', '${name}')" class="danger-btn" style="flex:1;">Ban</button>` : `<button onclick="unbanUser('${uid}')" class="warning-btn" style="flex:1;">Unban</button>`}
-            <button onclick="viewUserMessages('${uid}')" style="flex:1;">View Messages</button>
+          <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+            ${!isBanned ? `<button onclick="quickBanUser('${uid}', '${displayName}')" class="danger-btn">🔨 Ban</button>` : `<button onclick="unbanUser('${uid}', '${displayName}')" class="warning-btn">✓ Unban</button>`}
+            <button onclick="kickUser('${uid}', '${displayName}')" class="warning-btn">👢 Kick</button>
+            ${!isMuted ? `<button onclick="muteUser('${uid}', '${displayName}')" class="warning-btn">🔇 Mute</button>` : `<button onclick="unmuteUser('${uid}', '${displayName}')" style="background:#10b981; color:white;">🔊 Unmute</button>`}
+            <button onclick="viewUserMessages('${uid}', '${displayName}')" style="background:#3b82f6; color:white;">📜 Messages</button>
           </div>
+          <button onclick="impersonateUser('${uid}', '${displayName}', '${photoURL}')" style="width:100%; margin-top:10px; background:#a855f7; color:white; font-weight:bold;">👤 Sign In As User</button>
         </div>
       `;
     };
@@ -285,10 +307,13 @@
       }
     };
 
-    window.unbanUser = async (uid) => {
+    window.unbanUser = async (uid, username) => {
       if(auth.currentUser.uid !== OWNER_UID) return;
       await deleteDoc(doc(db, "banned_users", uid));
-      alert("User unbanned.");
+      await addDoc(collection(db, "chats", "global_room", "messages"), {
+        sender: "SYSTEM", text: `✅ ${username} has been unbanned.`, type: 'broadcast', time: Date.now()
+      });
+      alert(`${username} has been unbanned.`);
       lookupUser();
     };
 
@@ -304,6 +329,72 @@
       const uid = userSnap.data().uid;
       await quickBanUser(uid, username);
       document.getElementById('banUsername').value = "";
+    };
+
+    window.kickUser = async (uid, username) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm(`Kick ${username}? They can rejoin immediately.`)) {
+        await addDoc(collection(db, "chats", "global_room", "messages"), {
+          sender: "SYSTEM", text: `👢 ${username} has been kicked from the vault!`, type: 'broadcast', time: Date.now()
+        });
+        // Store kick record
+        await setDoc(doc(db, "kicks", `${uid}_${Date.now()}`), {
+          userId: uid,
+          username: username,
+          kickedBy: OWNER_UID,
+          kickedAt: Date.now()
+        });
+        alert(`${username} has been kicked!`);
+      }
+    };
+
+    window.muteUser = async (uid, username) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm(`Mute ${username}? They won't be able to send messages.`)) {
+        await setDoc(doc(db, "muted_users", uid), {
+          username: username,
+          mutedBy: OWNER_UID,
+          mutedAt: Date.now()
+        });
+        await addDoc(collection(db, "chats", "global_room", "messages"), {
+          sender: "SYSTEM", text: `🔇 ${username} has been muted.`, type: 'broadcast', time: Date.now()
+        });
+        alert(`${username} is now muted.`);
+        lookupUser();
+      }
+    };
+
+    window.unmuteUser = async (uid, username) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      await deleteDoc(doc(db, "muted_users", uid));
+      await addDoc(collection(db, "chats", "global_room", "messages"), {
+        sender: "SYSTEM", text: `🔊 ${username} has been unmuted.`, type: 'broadcast', time: Date.now()
+      });
+      alert(`${username} is now unmuted.`);
+      lookupUser();
+    };
+
+    window.impersonateUser = async (uid, username, photoURL) => {
+      if(auth.currentUser.uid !== OWNER_UID) return;
+      if(confirm(`⚠️ IMPERSONATE ${username}?\n\nYou will temporarily appear as this user. Your real identity will be hidden.\n\nClick OK to proceed.`)) {
+        // Store original admin identity
+        const originalUID = auth.currentUser.uid;
+        const originalName = auth.currentUser.displayName;
+        const originalPhoto = auth.currentUser.photoURL;
+        
+        // Store impersonation session
+        sessionStorage.setItem('impersonating', JSON.stringify({
+          targetUID: uid,
+          targetName: username,
+          targetPhoto: photoURL,
+          originalUID: originalUID,
+          originalName: originalName,
+          originalPhoto: originalPhoto
+        }));
+        
+        alert(`You are now signed in as ${username}.\n\nYour messages will appear as theirs.\n\nReload the page to return to your admin account.`);
+        location.reload();
+      }
     };
 
     window.clearGlobalChat = async () => {
@@ -421,21 +512,43 @@
     // --- AUTH & CORE ---
     onAuthStateChanged(auth, async u => {
       if(u) {
-        // Check if banned
-        const banDoc = await getDoc(doc(db, "banned_users", u.uid));
-        if(banDoc.exists()) {
-          alert("You have been banned from The Secret Kiwi Vault.");
-          await signOut(auth);
-          return;
+        // Check if impersonating
+        const impersonationData = sessionStorage.getItem('impersonating');
+        let displayUID = u.uid;
+        let displayName = u.displayName;
+        let displayPhoto = u.photoURL || DEFAULT_PFP;
+        let isImpersonating = false;
+        
+        if(impersonationData && u.uid === OWNER_UID) {
+          const impData = JSON.parse(impersonationData);
+          displayUID = impData.targetUID;
+          displayName = impData.targetName;
+          displayPhoto = impData.targetPhoto;
+          isImpersonating = true;
+        }
+        
+        // Check if banned (unless impersonating)
+        if(!isImpersonating) {
+          const banDoc = await getDoc(doc(db, "banned_users", u.uid));
+          if(banDoc.exists()) {
+            alert("You have been banned from The Secret Kiwi Vault.");
+            await signOut(auth);
+            return;
+          }
         }
 
         document.getElementById('loggedInUI').style.display = 'flex';
-        document.getElementById('userGreeting').innerText = u.displayName;
-        document.getElementById('navPfp').src = u.photoURL || DEFAULT_PFP;
+        document.getElementById('userGreeting').innerText = displayName + (isImpersonating ? ' 👁️' : '');
+        document.getElementById('navPfp').src = displayPhoto;
         document.getElementById('kiwiImage').style.display = 'inline-block';
         closeModal('authModal');
         
-        if(u.uid === OWNER_UID) {
+        // Store display info for message sending
+        window.currentDisplayUID = displayUID;
+        window.currentDisplayName = displayName;
+        window.currentDisplayPhoto = displayPhoto;
+        
+        if(u.uid === OWNER_UID && !isImpersonating) {
           document.getElementById('adminBtn').style.display = 'block';
           
           // Real-time report monitoring
@@ -535,10 +648,17 @@
     window.sendMessage = async () => { 
       const v = document.getElementById('chatInput').value; 
       if(v) {
+        // Check if user is muted (only check real UID, not impersonated)
+        const muteDoc = await getDoc(doc(db, "muted_users", auth.currentUser.uid));
+        if(muteDoc.exists()) {
+          alert("🔇 You are muted and cannot send messages.");
+          return;
+        }
+        
         const msgData = { 
-          senderId: auth.currentUser.uid, 
-          sender: auth.currentUser.displayName, 
-          photoURL: auth.currentUser.photoURL || DEFAULT_PFP, 
+          senderId: window.currentDisplayUID || auth.currentUser.uid, 
+          sender: window.currentDisplayName || auth.currentUser.displayName, 
+          photoURL: window.currentDisplayPhoto || auth.currentUser.photoURL || DEFAULT_PFP, 
           text: v, 
           time: Date.now() 
         };
@@ -556,9 +676,16 @@
     window.sendDM = async () => { 
       const v = document.getElementById('dmInput').value; 
       if(v && currentDMRecipient) {
+        // Check if user is muted
+        const muteDoc = await getDoc(doc(db, "muted_users", auth.currentUser.uid));
+        if(muteDoc.exists()) {
+          alert("🔇 You are muted and cannot send messages.");
+          return;
+        }
+        
         await addDoc(collection(db, "dms"), { 
-          senderId: auth.currentUser.uid, 
-          sender: auth.currentUser.displayName, 
+          senderId: window.currentDisplayUID || auth.currentUser.uid, 
+          sender: window.currentDisplayName || auth.currentUser.displayName, 
           toId: currentDMRecipient, 
           text: v, 
           time: Date.now() 
