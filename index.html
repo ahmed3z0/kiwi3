@@ -395,8 +395,15 @@
     window.showUserDetail = async (uid) => {
       selectedUserUid = uid;
       
+      console.log('Fetching user details for UID:', uid);
+      
       // Fetch fresh data from Firestore
       const userDoc = await getDoc(doc(db, "users", uid));
+      
+      console.log('User doc exists:', userDoc.exists());
+      if (userDoc.exists()) {
+        console.log('User data:', userDoc.data());
+      }
       
       const detailBox = document.getElementById('userDetailBox');
       const content = document.getElementById('userDetailContent');
